@@ -107,7 +107,7 @@ export default function LoginForm() {
         setError(toKoreanError(error.message));
         return;
       }
-      router.push("/");
+      router.push("/exercises");
       router.refresh();
       return;
     }
@@ -144,7 +144,7 @@ export default function LoginForm() {
     }
     // 이메일 인증을 켜 둔 경우 session 이 없다.
     if (data.session) {
-      router.push("/");
+      router.push("/exercises");
       router.refresh();
     } else {
       setMessage("가입 확인 메일을 보냈습니다. 메일의 링크를 눌러 인증하세요.");

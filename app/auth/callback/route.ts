@@ -7,8 +7,9 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
 
   // 같은 사이트 안의 경로로만 이동시킨다 (외부 주소로 보내는 공격 방지).
-  const next = searchParams.get("next") ?? "/";
-  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  const next = searchParams.get("next") ?? "/exercises";
+  const safeNext =
+    next.startsWith("/") && !next.startsWith("//") ? next : "/exercises";
 
   if (code) {
     const supabase = await createClient();
