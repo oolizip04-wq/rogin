@@ -167,6 +167,8 @@ export default function LoginForm() {
         // 인증 메일의 링크가 지금 접속한 사이트로 돌아오게 한다.
         emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: {
+          // display_name 은 Supabase 대시보드의 Users 목록에 이름으로 보인다.
+          display_name: nicknameValue,
           nickname: nicknameValue,
           unit_branch: unit.branch,
           unit_name: unit.name,
