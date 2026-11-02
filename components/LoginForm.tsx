@@ -11,13 +11,13 @@ type CheckStatus = "checking" | "available" | "taken" | "error";
 /** value 는 확인을 요청한 입력값. 입력이 바뀌면 이전 확인 결과는 무효가 된다. */
 type Check = { value: string; status: CheckStatus };
 
-export default function LoginForm() {
+export default function LoginForm({ notice }: { notice?: string }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(notice ?? null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [nickname, setNickname] = useState("");
