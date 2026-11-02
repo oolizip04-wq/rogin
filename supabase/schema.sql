@@ -3,17 +3,14 @@
 -- 여러 번 실행해도 안전합니다. 이전 버전을 이미 실행했다면 그대로 다시 실행하면 업데이트됩니다.
 
 -- ───── 부대 ─────
+-- (이 편집기는 'add column if not exists' 와 DO 블록을 해석하지 못해서,
+--  처음부터 모든 칸과 제한을 테이블 정의 안에 넣었습니다.)
 create table if not exists public.units (
   id uuid primary key default gen_random_uuid(),
-  name text not null unique,
+  name text not null unique check (char_length(name) between 2 and 80),
+  branch text,
   created_at timestamptz not null default now()
 );
-
-alter table public.units add column if not exists branch text;
-alter table public.units drop constraint if exists units_name_check;
-alter table public.units drop constraint if exists units_name_length;
-alter table public.units
-  add constraint units_name_length check (char_length(name) between 2 and 80);
 
 -- ───── 프로필 (auth.users 와 1:1) ─────
 create table if not exists public.profiles (
@@ -58,7 +55,8 @@ create policy "users update own profile"
 -- ───── 중복확인 함수 ─────
 -- 회원가입 화면의 [중복확인] 버튼이 부른다. 사용 가능하면 true.
 -- 주의: 로그인 전에도 호출할 수 있어서, 이메일이 가입돼 있는지 누구나 물어볼 수 있다.
-create or replace function public.check_nickname_available(p_nickname text)
+drop function if exists public.check_nickname_available(text);
+create function public.check_nickname_available(p_nickname text)
 returns boolean
 language sql
 stable
@@ -71,7 +69,8 @@ as $$
   );
 $$;
 
-create or replace function public.check_email_available(p_email text)
+drop function if exists public.check_email_available(text);
+create function public.check_email_available(p_email text)
 returns boolean
 language sql
 stable
@@ -93,7 +92,8 @@ grant execute on function public.check_email_available(text) to anon, authentica
 -- 회원가입 폼이 보낸 nickname, unit_branch, unit_name 으로 프로필을 만들고,
 -- 처음 보는 부대 이름이면 부대도 새로 만든다.
 -- 소셜 로그인처럼 값이 없으면 unit_id 는 비워 두고 나중에 설정하게 한다.
-create or replace function public.handle_new_user()
+drop function if exists public.handle_new_user() cascade;
+create function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer

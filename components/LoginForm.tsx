@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { randomNickname } from "@/lib/nickname";
@@ -16,6 +16,7 @@ export default function LoginForm() {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,6 +24,15 @@ export default function LoginForm() {
   const [unit, setUnit] = useState<UnitValue | null>(null);
   const [emailCheck, setEmailCheck] = useState<Check | null>(null);
   const [nicknameCheck, setNicknameCheck] = useState<Check | null>(null);
+  /** 인증 메일을 다시 보낼 수 있는 이메일. 인증이 필요한 상태일 때만 값이 있다. */
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
 
   if (!isSupabaseConfigured) {
     return (
@@ -89,6 +99,23 @@ export default function LoginForm() {
     if (error) setError("소셜 로그인을 시작하지 못했습니다.");
   }
 
+  async function handleResend() {
+    if (!pendingEmail || cooldown > 0) return;
+    setError(null);
+    setMessage(null);
+    const { error } = await createClient().auth.resend({
+      type: "signup",
+      email: pendingEmail,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) {
+      setError(toKoreanError(error.message));
+      return;
+    }
+    setMessage("인증 메일을 다시 보냈습니다. 스팸함도 확인하세요.");
+    setCooldown(60);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -105,6 +132,9 @@ export default function LoginForm() {
       setLoading(false);
       if (error) {
         setError(toKoreanError(error.message));
+        if (error.message.includes("Email not confirmed")) {
+          setPendingEmail(email.trim());
+        }
         return;
       }
       router.push("/exercises");
@@ -112,6 +142,10 @@ export default function LoginForm() {
       return;
     }
 
+    if (password !== passwordConfirm) {
+      setError("비밀번호가 서로 다릅니다. 다시 확인하세요.");
+      return;
+    }
     if (!emailOk) {
       setError("이메일 중복확인을 해주세요.");
       return;
@@ -130,6 +164,8 @@ export default function LoginForm() {
       email: emailValue,
       password,
       options: {
+        // 인증 메일의 링크가 지금 접속한 사이트로 돌아오게 한다.
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: {
           nickname: nicknameValue,
           unit_branch: unit.branch,
@@ -148,6 +184,8 @@ export default function LoginForm() {
       router.refresh();
     } else {
       setMessage("가입 확인 메일을 보냈습니다. 메일의 링크를 눌러 인증하세요.");
+      setPendingEmail(emailValue);
+      setCooldown(60);
     }
   }
 
@@ -224,6 +262,29 @@ export default function LoginForm() {
         <>
           <p>
             <label>
+              비밀번호 확인
+              <br />
+              <input
+                type="password"
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                required
+                minLength={6}
+                autoComplete="new-password"
+                style={{ width: "100%" }}
+              />
+            </label>
+            {passwordConfirm && (
+              <small role="status">
+                {password === passwordConfirm
+                  ? "비밀번호가 일치합니다."
+                  : "비밀번호가 서로 다릅니다."}
+              </small>
+            )}
+          </p>
+
+          <p>
+            <label>
               닉네임 (2~20자)
               <br />
               <input
@@ -265,6 +326,17 @@ export default function LoginForm() {
 
       {error && <p role="alert">{error}</p>}
       {message && <p>{message}</p>}
+      {pendingEmail && (
+        <p>
+          <button type="button" onClick={handleResend} disabled={cooldown > 0}>
+            {cooldown > 0
+              ? `인증 메일 다시 보내기 (${cooldown}초 후)`
+              : "인증 메일 다시 보내기"}
+          </button>
+          <br />
+          <small>받는 주소: {pendingEmail}</small>
+        </p>
+      )}
 
       <button type="submit" disabled={loading}>
         {loading ? "처리 중..." : mode === "login" ? "로그인" : "가입하기"}
@@ -319,7 +391,10 @@ function toKoreanError(message: string): string {
   if (message.toLowerCase().includes("password")) {
     return "비밀번호가 조건에 맞지 않습니다. 6자 이상으로 입력하세요.";
   }
-  if (message.toLowerCase().includes("rate limit")) {
+  if (
+    message.toLowerCase().includes("rate limit") ||
+    message.includes("you can only request this after")
+  ) {
     return "시도가 너무 많습니다. 잠시 후 다시 시도하세요.";
   }
   return "문제가 생겼습니다. 잠시 후 다시 시도하세요.";
