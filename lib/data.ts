@@ -1,4 +1,4 @@
-import type { Equipment, Exercise, Muscle } from "./types";
+import type { BodyPart, Exercise, Muscle } from "./types";
 
 export const MUSCLE_LABELS: Record<Muscle, string> = {
   chest: "가슴",
@@ -13,18 +13,27 @@ export const MUSCLE_LABELS: Record<Muscle, string> = {
   calves: "종아리",
 };
 
-export const EQUIPMENT: Equipment[] = [
-  { id: "dumbbell", name: "덤벨" },
-  { id: "barbell", name: "바벨" },
-  { id: "bench", name: "벤치" },
-  { id: "rack", name: "랙(스쿼트 랙)" },
-  { id: "pullup-bar", name: "풀업바" },
-  { id: "dip-bar", name: "평행봉" },
-  { id: "situp-bench", name: "싯업 벤치" },
-  { id: "lat-pulldown", name: "랫풀다운 머신" },
-  { id: "treadmill", name: "러닝머신" },
-];
+/** 세부 근육이 속하는 운동 부위 */
+export const MUSCLE_BODY_PART: Record<Muscle, BodyPart> = {
+  abs: "abs",
+  chest: "chest",
+  back: "back",
+  shoulders: "shoulders",
+  biceps: "arms",
+  triceps: "arms",
+  quads: "legs",
+  hamstrings: "legs",
+  glutes: "legs",
+  calves: "legs",
+};
 
+/** 운동이 쓰는 부위들 (중복 없이) */
+export function bodyPartsOf(exercise: Exercise): BodyPart[] {
+  return [...new Set(exercise.muscles.map((m) => MUSCLE_BODY_PART[m]))];
+}
+
+// 기구 id 는 lib/equipment.ts 에 등록된 것만 씁니다.
+// 배열은 그중 하나만 있어도 된다는 뜻입니다.
 // 설명은 초안입니다. 정식 서비스 전에 내용을 검수하세요.
 export const EXERCISES: Exercise[] = [
   {
@@ -73,7 +82,7 @@ export const EXERCISES: Exercise[] = [
     description:
       "벤치에 누워 덤벨을 가슴 위로 밀어 올립니다. 내릴 때는 팔꿈치를 몸에서 약간 벌려 가슴 옆까지 내립니다.",
     muscles: ["chest", "triceps", "shoulders"],
-    requires: ["dumbbell", "bench"],
+    requires: ["dumbbell", ["flat-bench", "adjustable-bench"]],
   },
   {
     id: "barbell-bench-press",
@@ -81,7 +90,10 @@ export const EXERCISES: Exercise[] = [
     description:
       "벤치에 누워 바를 가슴 중앙까지 내렸다가 밀어 올립니다. 무거운 중량은 반드시 보조자와 함께 하세요.",
     muscles: ["chest", "triceps", "shoulders"],
-    requires: ["barbell", "bench"],
+    requires: [
+      "barbell",
+      ["bench-press-rack", "power-rack", "flat-bench", "adjustable-bench"],
+    ],
   },
   {
     id: "barbell-squat",
@@ -89,7 +101,7 @@ export const EXERCISES: Exercise[] = [
     description:
       "바를 승모근 위에 얹고 허벅지가 바닥과 평행해질 때까지 앉았다 일어납니다. 랙 높이와 안전 바 설정을 확인하세요.",
     muscles: ["quads", "glutes", "hamstrings"],
-    requires: ["barbell", "rack"],
+    requires: ["barbell", ["squat-rack", "power-rack"]],
   },
   {
     id: "pullup",
@@ -97,7 +109,7 @@ export const EXERCISES: Exercise[] = [
     description:
       "바를 어깨너비보다 넓게 잡고 턱이 바 위로 올라올 때까지 당깁니다. 내려올 때도 천천히 버팁니다.",
     muscles: ["back", "biceps"],
-    requires: ["pullup-bar"],
+    requires: [["pullup-bar", "multigrip-pullup-bar"]],
   },
   {
     id: "dip",
@@ -105,7 +117,7 @@ export const EXERCISES: Exercise[] = [
     description:
       "평행봉을 잡고 팔꿈치를 굽혀 몸을 내렸다가 밀어 올립니다. 어깨가 불편하면 내리는 깊이를 줄이세요.",
     muscles: ["chest", "triceps"],
-    requires: ["dip-bar"],
+    requires: ["parallel-bars"],
   },
   {
     id: "situp",
@@ -113,7 +125,7 @@ export const EXERCISES: Exercise[] = [
     description:
       "벤치에 발을 고정하고 상체를 말아 올립니다. 목을 당기지 말고 복근으로 올라옵니다.",
     muscles: ["abs"],
-    requires: ["situp-bench"],
+    requires: [["situp-bench", "adjustable-bench"]],
   },
   {
     id: "lat-pulldown",
