@@ -1,10 +1,9 @@
 -- 체단실: 부대 / 프로필 스키마
--- Supabase 대시보드 > SQL Editor 에 붙여넣고 Run 하세요.
+-- Supabase 대시보드 > SQL Editor 에 붙여넣고 Run 하세요. (Logs 화면이 아닙니다)
 -- 여러 번 실행해도 안전합니다. 이전 버전을 이미 실행했다면 그대로 다시 실행하면 업데이트됩니다.
 
 -- ───── 부대 ─────
--- (이 편집기는 'add column if not exists' 와 DO 블록을 해석하지 못해서,
---  처음부터 모든 칸과 제한을 테이블 정의 안에 넣었습니다.)
+-- name 은 목록에서 고른 부대의 전체 이름입니다. (예: 육군 지상작전사령부 제1군단 제1보병사단)
 create table if not exists public.units (
   id uuid primary key default gen_random_uuid(),
   name text not null unique check (char_length(name) between 2 and 80),
@@ -28,15 +27,20 @@ alter table public.units enable row level security;
 alter table public.profiles enable row level security;
 
 -- ───── 권한 (테이블 자동 공개를 껐으므로 직접 열어 준다) ─────
-grant select on public.units to anon, authenticated;
+-- 부대 목록은 로그인한 사람만 읽는다. (지금은 부대를 고르는 화면이 없다)
+revoke select on public.units from anon;
+grant select on public.units to authenticated;
 grant select on public.profiles to authenticated;
-grant update (nickname, unit_id) on public.profiles to authenticated;
+-- 닉네임만 직접 수정할 수 있다. (소속 부대 칸은 지금 쓰지 않는다)
+revoke update on public.profiles from authenticated;
+grant update (nickname) on public.profiles to authenticated;
 
 -- ───── RLS 정책 ─────
 drop policy if exists "units are readable by everyone" on public.units;
-create policy "units are readable by everyone"
+drop policy if exists "units are readable by logged-in users" on public.units;
+create policy "units are readable by logged-in users"
   on public.units for select
-  to anon, authenticated
+  to authenticated
   using (true);
 
 drop policy if exists "profiles are readable by logged-in users" on public.profiles;
@@ -89,9 +93,8 @@ grant execute on function public.check_nickname_available(text) to anon, authent
 grant execute on function public.check_email_available(text) to anon, authenticated;
 
 -- ───── 가입 시 프로필 자동 생성 ─────
--- 회원가입 폼이 보낸 nickname, unit_branch, unit_name 으로 프로필을 만들고,
--- 처음 보는 부대 이름이면 부대도 새로 만든다.
--- 소셜 로그인처럼 값이 없으면 unit_id 는 비워 두고 나중에 설정하게 한다.
+-- 회원가입 폼이 보낸 nickname 으로 프로필을 만든다.
+-- 소속 부대는 받지 않는다. (units 테이블과 unit_id 칸은 나중을 위해 남겨 둔다)
 drop function if exists public.handle_new_user() cascade;
 create function public.handle_new_user()
 returns trigger
@@ -100,20 +103,9 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_branch text;
-  v_unit_name text;
-  v_unit_id uuid;
   v_nickname text;
 begin
-  v_branch := left(nullif(btrim(new.raw_user_meta_data ->> 'unit_branch'), ''), 10);
-  v_unit_name := left(nullif(btrim(new.raw_user_meta_data ->> 'unit_name'), ''), 80);
   v_nickname := left(nullif(btrim(new.raw_user_meta_data ->> 'nickname'), ''), 20);
-
-  if v_unit_name is not null and char_length(v_unit_name) >= 2 then
-    insert into public.units (name, branch) values (v_unit_name, v_branch)
-    on conflict (name) do nothing;
-    select id into v_unit_id from public.units where name = v_unit_name;
-  end if;
 
   if v_nickname is null or char_length(v_nickname) < 2 then
     v_nickname := '장병' || substr(new.id::text, 1, 4);
@@ -126,8 +118,8 @@ begin
     v_nickname := left(v_nickname, 15) || '_' || substr(md5(random()::text), 1, 4);
   end if;
 
-  insert into public.profiles (id, nickname, unit_id)
-  values (new.id, v_nickname, v_unit_id);
+  insert into public.profiles (id, nickname)
+  values (new.id, v_nickname);
 
   return new;
 end;

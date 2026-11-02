@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { randomNickname } from "@/lib/nickname";
-import UnitPicker, { type UnitValue } from "@/components/UnitPicker";
 
 type Mode = "login" | "signup";
 type CheckStatus = "checking" | "available" | "taken" | "error";
@@ -21,7 +20,6 @@ export default function LoginForm({ notice }: { notice?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [nickname, setNickname] = useState("");
-  const [unit, setUnit] = useState<UnitValue | null>(null);
   const [emailCheck, setEmailCheck] = useState<Check | null>(null);
   const [nicknameCheck, setNicknameCheck] = useState<Check | null>(null);
   /** 인증 메일을 다시 보낼 수 있는 이메일. 인증이 필요한 상태일 때만 값이 있다. */
@@ -154,11 +152,6 @@ export default function LoginForm({ notice }: { notice?: string }) {
       setError("닉네임 중복확인을 해주세요.");
       return;
     }
-    if (!unit) {
-      setError("소속 부대를 선택하세요. (필수 항목을 모두 채워야 합니다)");
-      return;
-    }
-
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email: emailValue,
@@ -170,8 +163,6 @@ export default function LoginForm({ notice }: { notice?: string }) {
           // display_name 은 Supabase 대시보드의 Users 목록에 이름으로 보인다.
           display_name: nicknameValue,
           nickname: nicknameValue,
-          unit_branch: unit.branch,
-          unit_name: unit.name,
         },
       },
     });
@@ -321,8 +312,6 @@ export default function LoginForm({ notice }: { notice?: string }) {
               }}
             />
           </p>
-
-          <UnitPicker onChange={setUnit} />
         </>
       )}
 
