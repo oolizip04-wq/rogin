@@ -1,3 +1,4 @@
+import { EQUIPMENT_INFO } from "./equipmentInfo";
 import type {
   BodyPart,
   Equipment,
@@ -139,6 +140,12 @@ export const EQUIPMENT_BY_ID: ReadonlyMap<string, Equipment> = new Map(
 /** 등록 내용이 어긋나지 않았는지 확인한다. 문제가 있으면 문장 목록을 돌려준다. */
 export function validateEquipment(): string[] {
   const problems: string[] = [];
+  for (const e of EQUIPMENT) {
+    if (!EQUIPMENT_INFO[e.id]) problems.push(`설명이 없습니다: ${e.id}`);
+  }
+  for (const id of Object.keys(EQUIPMENT_INFO)) {
+    if (!EQUIPMENT.some((e) => e.id === id)) problems.push(`없는 기구의 설명입니다: ${id}`);
+  }
   const seen = new Set<string>();
   const groupIds = new Set(EQUIPMENT_GROUPS.map((g) => g.id));
   for (const e of EQUIPMENT) {

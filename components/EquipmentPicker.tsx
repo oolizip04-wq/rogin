@@ -11,6 +11,8 @@ import {
   KIND_ORDER,
   equipmentForPart,
 } from "@/lib/equipment";
+import { EQUIPMENT_INFO } from "@/lib/equipmentInfo";
+import { useEquipmentPhotos } from "@/lib/useEquipmentPhotos";
 import { useOwnedEquipment } from "@/lib/useOwnedEquipment";
 import type { BodyPart, Equipment } from "@/lib/types";
 
@@ -26,15 +28,28 @@ function partsText(item: Equipment, current: BodyPart): string {
 export default function EquipmentPicker() {
   const { ids, has, toggle, clear } = useOwnedEquipment();
   const [part, setPart] = useState<BodyPart>("chest");
+  const photos = useEquipmentPhotos();
 
   const items = equipmentForPart(part);
 
   function renderRow(item: Equipment) {
     const hint = partsText(item, part);
+    const photo = photos[item.id];
     return (
       <li key={item.id}>
         <label>
           <input type="checkbox" checked={has(item.id)} onChange={() => toggle(item.id)} />{" "}
+          {photo && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={photo}
+              alt=""
+              width={32}
+              height={32}
+              loading="lazy"
+              style={{ objectFit: "cover", verticalAlign: "middle" }}
+            />
+          )}{" "}
           {item.name}
           {hint && (
             <>
@@ -43,6 +58,26 @@ export default function EquipmentPicker() {
             </>
           )}
         </label>
+        <details>
+          <summary>
+            <small>설명 보기</small>
+          </summary>
+          {photo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={photo}
+              alt={item.name}
+              width={240}
+              loading="lazy"
+              style={{ maxWidth: "100%", height: "auto" }}
+            />
+          ) : (
+            <p>
+              <small>사진 준비 중</small>
+            </p>
+          )}
+          <p>{EQUIPMENT_INFO[item.id]}</p>
+        </details>
       </li>
     );
   }

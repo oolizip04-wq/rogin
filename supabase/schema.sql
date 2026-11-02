@@ -56,6 +56,22 @@ create policy "users update own profile"
   using (id = (select auth.uid()))
   with check (id = (select auth.uid()));
 
+-- ───── 기구 사진 저장소 ─────
+-- 사진은 Supabase 대시보드 Storage > equipment 에서 올린다. 파일 이름은 기구 id 와 같게 한다.
+-- (예: dumbbell.jpg). 누구나 보고, 올리고 지우는 건 대시보드(관리자)에서만 한다.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('equipment', 'equipment', true, 2097152, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public = true,
+      file_size_limit = 2097152,
+      allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp'];
+
+drop policy if exists "equipment photos are readable by everyone" on storage.objects;
+create policy "equipment photos are readable by everyone"
+  on storage.objects for select
+  to anon, authenticated
+  using (bucket_id = 'equipment');
+
 -- ───── 중복확인 함수 ─────
 -- 회원가입 화면의 [중복확인] 버튼이 부른다. 사용 가능하면 true.
 -- 주의: 로그인 전에도 호출할 수 있어서, 이메일이 가입돼 있는지 누구나 물어볼 수 있다.
