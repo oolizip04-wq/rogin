@@ -15,6 +15,21 @@ import { useEquipmentPhotos } from "@/lib/useEquipmentPhotos";
 import { useOwnedEquipment } from "@/lib/useOwnedEquipment";
 import type { BodyPart, Equipment } from "@/lib/types";
 
+/** 기구 이름 옆에 쓸 수 있는 부위를 작은 표로 보여 줄지. 안 보이게 하려면 false 로 바꾸세요. */
+const SHOW_PART_BADGE = true;
+
+const badgeStyle = {
+  display: "inline-block",
+  marginLeft: 6,
+  padding: "0 8px",
+  border: "1px solid currentColor",
+  borderRadius: 12,
+  opacity: 0.75,
+  // 좁은 화면에서는 부위가 많으면 줄을 바꿔 화면 밖으로 넘치지 않게 한다.
+  maxWidth: "100%",
+  overflowWrap: "anywhere" as const,
+};
+
 /**
  * 운동 부위별로 기구를 고르는 화면.
  * 같은 기구는 어느 부위에서 골라도 하나의 선택 상태(equipmentStore)를 함께 쓴다.
@@ -33,10 +48,12 @@ export default function EquipmentPicker() {
       ? `/equipment/${item.id}.svg`
       : undefined;
     const photo = photos[item.id] ?? drawing;
+    const selected = has(item.id);
+    const partNames = item.parts.map((p) => BODY_PART_LABELS[p]).join(" · ");
     return (
       <li key={item.id}>
         <label>
-          <input type="checkbox" checked={has(item.id)} onChange={() => toggle(item.id)} />{" "}
+          <input type="checkbox" checked={selected} onChange={() => toggle(item.id)} />{" "}
           {photo && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -49,6 +66,14 @@ export default function EquipmentPicker() {
             />
           )}{" "}
           {item.name}
+          {SHOW_PART_BADGE && (
+            <small style={badgeStyle}>
+              {item.parts.length > 1 ? `여러 부위 가능 · ${partNames}` : partNames}
+            </small>
+          )}
+          {selected && (
+            <small style={{ marginLeft: 6, fontWeight: 700 }}>✓ 선택됨</small>
+          )}
         </label>
         <details>
           <summary>
