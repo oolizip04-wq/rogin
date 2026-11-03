@@ -10,8 +10,9 @@ import {
   KIND_LABELS,
   KIND_ORDER,
   equipmentForPart,
+  unclassifiedEquipment,
 } from "@/lib/equipment";
-import { EQUIPMENT_INFO } from "@/lib/equipmentInfo";
+import { EQUIPMENT_ILLUSTRATIONS, EQUIPMENT_INFO } from "@/lib/equipmentInfo";
 import { useEquipmentPhotos } from "@/lib/useEquipmentPhotos";
 import { useOwnedEquipment } from "@/lib/useOwnedEquipment";
 import type { BodyPart, Equipment } from "@/lib/types";
@@ -31,10 +32,15 @@ export default function EquipmentPicker() {
   const photos = useEquipmentPhotos();
 
   const items = equipmentForPart(part);
+  const unclassified = unclassifiedEquipment();
 
   function renderRow(item: Equipment) {
     const hint = partsText(item, part);
-    const photo = photos[item.id];
+    // 실제 사진이 있으면 사진, 없으면 임시 일러스트
+    const drawing = EQUIPMENT_ILLUSTRATIONS.has(item.id)
+      ? `/equipment/${item.id}.svg`
+      : undefined;
+    const photo = photos[item.id] ?? drawing;
     return (
       <li key={item.id}>
         <label>
@@ -172,6 +178,22 @@ export default function EquipmentPicker() {
       <p>
         <small>전체 기구 {EQUIPMENT.length}종</small>
       </p>
+
+      {/* 개발 중에만 보입니다. 분류표(lib/classification.ts)에서 부위를 아직 안 정한 기구입니다. */}
+      {process.env.NODE_ENV !== "production" && unclassified.length > 0 && (
+        <details>
+          <summary>
+            <small>[개발용] 부위가 아직 없는 기구 ({unclassified.length}) — 화면에 안 나옵니다</small>
+          </summary>
+          <ul>
+            {unclassified.map((e) => (
+              <li key={e.id}>
+                <small>{e.name}</small>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </section>
   );
 }

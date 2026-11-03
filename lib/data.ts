@@ -1,4 +1,13 @@
-import type { BodyPart, Exercise, Muscle } from "./types";
+import { EQUIPMENT_BY_NAME } from "./equipment";
+import { EXERCISE_TABLE } from "./exerciseTable";
+import { AREA_INFO } from "./labels";
+import type {
+  AreaLabel,
+  BodyPart,
+  Exercise,
+  Muscle,
+  Requirement,
+} from "./types";
 
 export const MUSCLE_LABELS: Record<Muscle, string> = {
   chest: "가슴",
@@ -6,141 +15,97 @@ export const MUSCLE_LABELS: Record<Muscle, string> = {
   shoulders: "어깨",
   biceps: "이두",
   triceps: "삼두",
-  abs: "복근",
-  quads: "대퇴사두",
-  hamstrings: "햄스트링",
-  glutes: "둔근",
+  forearms: "전완",
+  abs: "복부·코어",
+  obliques: "옆구리",
+  quads: "앞벅지",
+  hamstrings: "뒷벅지",
+  glutes: "엉덩이",
+  adductors: "안쪽 허벅지",
+  abductors: "바깥 허벅지",
   calves: "종아리",
 };
 
-/** 세부 근육이 속하는 운동 부위 */
-export const MUSCLE_BODY_PART: Record<Muscle, BodyPart> = {
-  abs: "abs",
-  chest: "chest",
-  back: "back",
-  shoulders: "shoulders",
-  biceps: "arms",
-  triceps: "arms",
-  quads: "legs",
-  hamstrings: "legs",
-  glutes: "legs",
-  calves: "legs",
-};
-
-/** 운동이 쓰는 부위들 (중복 없이) */
+/** 운동이 쓰는 큰 부위들 (중복 없이) */
 export function bodyPartsOf(exercise: Exercise): BodyPart[] {
-  return [...new Set(exercise.muscles.map((m) => MUSCLE_BODY_PART[m]))];
+  return [...new Set(exercise.areas.map((a) => AREA_INFO[a].part))];
 }
 
-// 기구 id 는 lib/equipment.ts 에 등록된 것만 씁니다.
-// 배열은 그중 하나만 있어도 된다는 뜻입니다.
-// 설명은 초안입니다. 정식 서비스 전에 내용을 검수하세요.
-export const EXERCISES: Exercise[] = [
-  {
-    id: "pushup",
-    name: "푸시업",
-    description:
-      "손을 어깨너비보다 약간 넓게 짚고 몸을 일직선으로 유지한 채 가슴이 바닥에 가까워질 때까지 내려갔다 밀어 올립니다. 허리가 꺾이지 않게 복부에 힘을 주세요.",
-    muscles: ["chest", "triceps", "shoulders"],
-    requires: [],
-  },
-  {
-    id: "bodyweight-squat",
-    name: "맨몸 스쿼트",
-    description:
-      "발을 어깨너비로 벌리고 엉덩이를 뒤로 빼며 앉습니다. 무릎이 안쪽으로 모이지 않게 하고 허리를 곧게 유지합니다.",
-    muscles: ["quads", "glutes", "hamstrings"],
-    requires: [],
-  },
-  {
-    id: "plank",
-    name: "플랭크",
-    description:
-      "팔꿈치를 어깨 아래에 두고 머리부터 발끝까지 일직선을 유지합니다. 엉덩이가 처지거나 들리지 않게 하세요.",
-    muscles: ["abs"],
-    requires: [],
-  },
-  {
-    id: "dumbbell-curl",
-    name: "덤벨 컬",
-    description:
-      "팔꿈치를 몸 옆에 고정하고 덤벨을 어깨 쪽으로 들어 올린 뒤 천천히 내립니다. 몸의 반동을 쓰지 않습니다.",
-    muscles: ["biceps"],
-    requires: ["dumbbell"],
-  },
-  {
-    id: "dumbbell-shoulder-press",
-    name: "덤벨 숄더 프레스",
-    description:
-      "덤벨을 어깨 높이에서 머리 위로 밀어 올립니다. 허리가 과하게 꺾이지 않도록 복부에 힘을 줍니다.",
-    muscles: ["shoulders", "triceps"],
-    requires: ["dumbbell"],
-  },
-  {
-    id: "dumbbell-bench-press",
-    name: "덤벨 벤치 프레스",
-    description:
-      "벤치에 누워 덤벨을 가슴 위로 밀어 올립니다. 내릴 때는 팔꿈치를 몸에서 약간 벌려 가슴 옆까지 내립니다.",
-    muscles: ["chest", "triceps", "shoulders"],
-    requires: ["dumbbell", ["flat-bench", "adjustable-bench"]],
-  },
-  {
-    id: "barbell-bench-press",
-    name: "바벨 벤치 프레스",
-    description:
-      "벤치에 누워 바를 가슴 중앙까지 내렸다가 밀어 올립니다. 무거운 중량은 반드시 보조자와 함께 하세요.",
-    muscles: ["chest", "triceps", "shoulders"],
-    requires: [
-      "barbell",
-      ["bench-press-rack", "power-rack", "flat-bench", "adjustable-bench"],
-    ],
-  },
-  {
-    id: "barbell-squat",
-    name: "바벨 스쿼트",
-    description:
-      "바를 승모근 위에 얹고 허벅지가 바닥과 평행해질 때까지 앉았다 일어납니다. 랙 높이와 안전 바 설정을 확인하세요.",
-    muscles: ["quads", "glutes", "hamstrings"],
-    requires: ["barbell", ["squat-rack", "power-rack"]],
-  },
-  {
-    id: "pullup",
-    name: "풀업",
-    description:
-      "바를 어깨너비보다 넓게 잡고 턱이 바 위로 올라올 때까지 당깁니다. 내려올 때도 천천히 버팁니다.",
-    muscles: ["back", "biceps"],
-    requires: [["pullup-bar", "multigrip-pullup-bar"]],
-  },
-  {
-    id: "dip",
-    name: "딥스",
-    description:
-      "평행봉을 잡고 팔꿈치를 굽혀 몸을 내렸다가 밀어 올립니다. 어깨가 불편하면 내리는 깊이를 줄이세요.",
-    muscles: ["chest", "triceps"],
-    requires: ["parallel-bars"],
-  },
-  {
-    id: "situp",
-    name: "싯업",
-    description:
-      "벤치에 발을 고정하고 상체를 말아 올립니다. 목을 당기지 말고 복근으로 올라옵니다.",
-    muscles: ["abs"],
-    requires: [["situp-bench", "adjustable-bench"]],
-  },
-  {
-    id: "lat-pulldown",
-    name: "랫풀다운",
-    description:
-      "바를 넓게 잡고 가슴 위쪽으로 당깁니다. 어깨를 내리고 등 근육으로 당긴다는 느낌을 유지합니다.",
-    muscles: ["back", "biceps"],
-    requires: ["lat-pulldown"],
-  },
-  {
-    id: "treadmill-run",
-    name: "러닝머신 달리기",
-    description:
-      "처음 5분은 가볍게 걷거나 뛰며 몸을 데운 뒤, 본인 체력에 맞는 속도로 진행합니다. 불편하면 속도를 낮추세요.",
-    muscles: ["quads", "hamstrings", "calves"],
-    requires: ["treadmill"],
-  },
-];
+/** 운동 표(exerciseTable.ts)를 읽어 화면에서 쓰는 모양으로 바꾼다. 문제가 있으면 한국어 문장으로 모은다. */
+function build(): { exercises: Exercise[]; problems: string[] } {
+  const problems: string[] = [];
+  const exercises: Exercise[] = [];
+  const ids = new Set<string>();
+
+  function resolve(exName: string, req: string | string[]): Requirement {
+    const toId = (name: string): string => {
+      const found = EQUIPMENT_BY_NAME.get(name);
+      if (!found) {
+        problems.push(
+          `운동 '${exName}' 의 필요기구에 없는 기구 '${name}' 이(가) 있습니다. 기구 이름을 확인하세요.`,
+        );
+        return name;
+      }
+      return found.id;
+    };
+    return Array.isArray(req) ? req.map(toId) : toId(req);
+  }
+
+  function checkAreas(exName: string, label: string, areas: AreaLabel[]) {
+    for (const a of areas) {
+      if (!(a in AREA_INFO)) {
+        problems.push(
+          `운동 '${exName}' 의 ${label}에 잘못된 이름 '${a}' 이(가) 있습니다. exerciseTable.ts 맨 위 설명의 부위 이름 중에서 적어 주세요.`,
+        );
+      }
+    }
+  }
+
+  for (const row of EXERCISE_TABLE) {
+    if (!/^[a-z0-9-]+$/.test(row.id)) {
+      problems.push(`운동 '${row.이름}' 의 id '${row.id}' 는 영어 소문자, 숫자, - 만 쓸 수 있습니다.`);
+    }
+    if (ids.has(row.id)) problems.push(`운동 id 가 겹칩니다: ${row.id}`);
+    ids.add(row.id);
+    if (row.세부부위.length === 0) {
+      problems.push(`운동 '${row.이름}' 에 세부부위가 비어 있습니다. 하나 이상 적어 주세요.`);
+    }
+    if (row.순서.length === 0) problems.push(`운동 '${row.이름}' 에 순서가 비어 있습니다.`);
+    checkAreas(row.이름, "세부부위", row.세부부위);
+    checkAreas(row.이름, "보조부위", row.보조부위 ?? []);
+
+    const areas = [...new Set(row.세부부위.filter((a) => a in AREA_INFO))];
+    const secondary = [
+      ...new Set((row.보조부위 ?? []).filter((a) => a in AREA_INFO && !areas.includes(a))),
+    ];
+    const muscles = [
+      ...new Set([...areas, ...secondary].map((a) => AREA_INFO[a].muscle)),
+    ];
+
+    exercises.push({
+      id: row.id,
+      name: row.이름,
+      description: row.설명,
+      steps: row.순서,
+      areas,
+      secondary,
+      muscles,
+      requires: row.필요기구.map((r) => resolve(row.이름, r)),
+    });
+  }
+  return { exercises, problems };
+}
+
+const built = build();
+
+if (built.problems.length > 0) {
+  throw new Error(
+    "운동 표(exerciseTable.ts)에 고칠 곳이 있습니다:\n- " + built.problems.join("\n- "),
+  );
+}
+
+export const EXERCISES: Exercise[] = built.exercises;
+
+export function getExercise(id: string): Exercise | undefined {
+  return EXERCISES.find((e) => e.id === id);
+}

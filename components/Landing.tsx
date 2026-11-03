@@ -105,7 +105,7 @@ export default function Landing() {
     }
 
     if (loggedIn) {
-      setTimeout(() => router.push("/exercises"), 900);
+      setTimeout(() => router.push("/equipment"), 900);
       return;
     }
     setTimeout(() => {

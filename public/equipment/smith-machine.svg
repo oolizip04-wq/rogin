@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img">
+  <title>스미스 머신</title>
+  <rect width="240" height="160" rx="12" fill="#eef1f5"/>
+  <g stroke="#212529" stroke-width="2" stroke-linejoin="round">
+    <!-- 바닥 받침 -->
+    <rect x="30" y="134" width="180" height="10" rx="3" fill="#495057"/>
+    <rect x="46" y="124" width="28" height="10" rx="2" fill="#6c757d"/>
+    <rect x="166" y="124" width="28" height="10" rx="2" fill="#6c757d"/>
+    <!-- 기둥(레일) -->
+    <rect x="62" y="22" width="9" height="102" rx="2" fill="#868e96"/>
+    <rect x="169" y="22" width="9" height="102" rx="2" fill="#868e96"/>
+    <!-- 위 가로대 -->
+    <rect x="58" y="14" width="124" height="10" rx="3" fill="#495057"/>
+    <!-- 안전 걸이 -->
+    <rect x="71" y="104" width="12" height="5" rx="2" fill="#343a40"/>
+    <rect x="157" y="104" width="12" height="5" rx="2" fill="#343a40"/>
+    <rect x="71" y="52" width="12" height="5" rx="2" fill="#343a40"/>
+    <rect x="157" y="52" width="12" height="5" rx="2" fill="#343a40"/>
+    <!-- 바 -->
+    <rect x="22" y="76" width="196" height="6" rx="3" fill="#adb5bd"/>
+    <!-- 레일을 타고 움직이는 부분 -->
+    <rect x="56" y="68" width="21" height="22" rx="4" fill="#e4572e"/>
+    <rect x="163" y="68" width="21" height="22" rx="4" fill="#e4572e"/>
+    <!-- 원판 -->
+    <rect x="30" y="52" width="14" height="54" rx="5" fill="#343a40"/>
+    <rect x="196" y="52" width="14" height="54" rx="5" fill="#343a40"/>
+  </g>
+  <g stroke="#fff" stroke-width="2" stroke-linecap="round" opacity="0.35">
+    <path d="M66 30v86M173 30v86"/>
+  </g>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img">
+  <title>바벨</title>
+  <rect width="240" height="160" rx="12" fill="#eef1f5"/>
+  <ellipse cx="120" cy="130" rx="100" ry="6" fill="#000" opacity="0.08"/>
+  <g stroke="#212529" stroke-width="2" stroke-linejoin="round">
+    <!-- 바 -->
+    <rect x="8" y="77" width="224" height="6" rx="3" fill="#adb5bd"/>
+    <rect x="66" y="74" width="108" height="12" rx="3" fill="#ced4da"/>
+    <!-- 왼쪽 원판 -->
+    <rect x="30" y="26" width="16" height="108" rx="6" fill="#343a40"/>
+    <rect x="46" y="38" width="12" height="84" rx="5" fill="#495057"/>
+    <rect x="58" y="52" width="8" height="56" rx="3" fill="#495057"/>
+    <rect x="66" y="68" width="6" height="24" rx="2" fill="#868e96"/>
+    <!-- 오른쪽 원판 -->
+    <rect x="194" y="26" width="16" height="108" rx="6" fill="#343a40"/>
+    <rect x="182" y="38" width="12" height="84" rx="5" fill="#495057"/>
+    <rect x="174" y="52" width="8" height="56" rx="3" fill="#495057"/>
+    <rect x="168" y="68" width="6" height="24" rx="2" fill="#868e96"/>
+  </g>
+  <rect x="30" y="26" width="16" height="8" rx="4" fill="#e4572e" stroke="#212529" stroke-width="2"/>
+  <rect x="194" y="26" width="16" height="8" rx="4" fill="#e4572e" stroke="#212529" stroke-width="2"/>
+  <g stroke="#212529" stroke-width="1.5" opacity="0.4">
+    <path d="M84 75v10M92 75v10M100 75v10M108 75v10M132 75v10M140 75v10M148 75v10M156 75v10"/>
+  </g>
+</svg>

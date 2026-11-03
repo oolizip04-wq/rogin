@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img">
+  <title>덤벨</title>
+  <rect width="240" height="160" rx="12" fill="#eef1f5"/>
+  <ellipse cx="120" cy="124" rx="92" ry="6" fill="#000" opacity="0.08"/>
+  <g stroke="#212529" stroke-width="2" stroke-linejoin="round">
+    <!-- 손잡이 -->
+    <rect x="78" y="75" width="84" height="10" rx="3" fill="#adb5bd"/>
+    <!-- 왼쪽 -->
+    <rect x="68" y="66" width="12" height="28" rx="3" fill="#868e96"/>
+    <rect x="46" y="44" width="22" height="72" rx="6" fill="#343a40"/>
+    <rect x="34" y="56" width="12" height="48" rx="4" fill="#495057"/>
+    <!-- 오른쪽 -->
+    <rect x="160" y="66" width="12" height="28" rx="3" fill="#868e96"/>
+    <rect x="172" y="44" width="22" height="72" rx="6" fill="#343a40"/>
+    <rect x="194" y="56" width="12" height="48" rx="4" fill="#495057"/>
+  </g>
+  <!-- 손잡이 미끄럼 방지 무늬 -->
+  <g stroke="#212529" stroke-width="1.5" opacity="0.45">
+    <path d="M92 76v8M100 76v8M108 76v8M116 76v8M124 76v8M132 76v8M140 76v8M148 76v8"/>
+  </g>
+  <!-- 빛 반사 -->
+  <g stroke="#fff" stroke-width="2" stroke-linecap="round" opacity="0.35">
+    <path d="M52 52v56M178 52v56"/>
+  </g>
+  <rect x="46" y="44" width="22" height="6" rx="3" fill="#e4572e" stroke="#212529" stroke-width="2"/>
+  <rect x="172" y="44" width="22" height="6" rx="3" fill="#e4572e" stroke="#212529" stroke-width="2"/>
+</svg>
