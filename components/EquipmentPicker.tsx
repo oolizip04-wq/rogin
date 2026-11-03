@@ -4,8 +4,6 @@ import { useState } from "react";
 import {
   BODY_PARTS,
   BODY_PART_LABELS,
-  EQUIPMENT,
-  EQUIPMENT_BY_ID,
   EQUIPMENT_GROUPS,
   KIND_LABELS,
   KIND_ORDER,
@@ -136,36 +134,14 @@ export default function EquipmentPicker() {
         })}
       </div>
 
-      <h3>선택한 기구 ({ids.length})</h3>
-      {ids.length === 0 ? (
+      {ids.length > 0 && (
         <p>
-          <small>아직 선택한 기구가 없습니다.</small>
-        </p>
-      ) : (
-        <>
-          <ul>
-            {ids.map((id) => {
-              const item = EQUIPMENT_BY_ID.get(id);
-              if (!item) return null;
-              return (
-                <li key={id}>
-                  {item.name}{" "}
-                  <small>({item.parts.map((p) => BODY_PART_LABELS[p]).join("·")})</small>{" "}
-                  <button type="button" onClick={() => toggle(id)}>
-                    해제
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          <small>선택한 기구 {ids.length}종</small>{" "}
           <button type="button" onClick={clear}>
             모두 해제
           </button>
-        </>
+        </p>
       )}
-      <p>
-        <small>전체 기구 {EQUIPMENT.length}종</small>
-      </p>
 
       {/* 개발 중에만 보입니다. 분류표(lib/classification.ts)에서 부위를 아직 안 정한 기구입니다. */}
       {process.env.NODE_ENV !== "production" && unclassified.length > 0 && (
