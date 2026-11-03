@@ -1,10 +1,12 @@
-import Link from "next/link";
 import AuthStatus from "@/components/AuthStatus";
 import EquipmentPicker from "@/components/EquipmentPicker";
+import EquipmentSync from "@/components/EquipmentSync";
+import StartWorkoutButton from "@/components/StartWorkoutButton";
 
 export default function EquipmentPage() {
   return (
     <main style={{ maxWidth: 640, margin: "0 auto", padding: 16 }}>
+      <EquipmentSync />
       <header
         style={{
           display: "flex",
@@ -17,12 +19,7 @@ export default function EquipmentPage() {
       </header>
 
       <EquipmentPicker />
-
-      <p>
-        <Link href="/workout">
-          <strong>운동 시작하기 →</strong>
-        </Link>
-      </p>
+      <StartWorkoutButton />
     </main>
   );
 }

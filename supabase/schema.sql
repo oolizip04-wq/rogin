@@ -23,6 +23,15 @@ create table if not exists public.profiles (
 create unique index if not exists profiles_nickname_lower_key
   on public.profiles (lower(nickname));
 
+-- 내가 가진 기구를 계정에 저장한다. (lib/equipmentSync.ts)
+--   equipment_ids : 고른 기구 id 목록
+--   equipment_set : '운동 시작하기'로 기구 선택을 한 번이라도 마쳤는지 (true 면 다음 로그인부터 바로 운동 시작)
+alter table public.profiles add column if not exists equipment_ids text[] not null default '{}';
+alter table public.profiles add column if not exists equipment_set boolean not null default false;
+alter table public.profiles drop constraint if exists profiles_equipment_ids_size;
+alter table public.profiles
+  add constraint profiles_equipment_ids_size check (cardinality(equipment_ids) <= 200);
+
 alter table public.units enable row level security;
 alter table public.profiles enable row level security;
 
@@ -31,9 +40,9 @@ alter table public.profiles enable row level security;
 revoke select on public.units from anon;
 grant select on public.units to authenticated;
 grant select on public.profiles to authenticated;
--- 닉네임만 직접 수정할 수 있다. (소속 부대 칸은 지금 쓰지 않는다)
+-- 닉네임과 내 기구만 직접 수정할 수 있다. (소속 부대 칸은 지금 쓰지 않는다)
 revoke update on public.profiles from authenticated;
-grant update (nickname) on public.profiles to authenticated;
+grant update (nickname, equipment_ids, equipment_set) on public.profiles to authenticated;
 
 -- ───── RLS 정책 ─────
 drop policy if exists "units are readable by everyone" on public.units;

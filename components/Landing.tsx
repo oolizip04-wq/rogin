@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import LoginForm from "@/components/LoginForm";
+import { nextPathAfterLogin } from "@/lib/equipmentSync";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const STAR_COUNT = 450;
@@ -105,7 +106,9 @@ export default function Landing() {
     }
 
     if (loggedIn) {
-      setTimeout(() => router.push("/equipment"), 900);
+      // 기구를 한 번 고른 계정은 바로 운동 시작으로 간다.
+      const destination = await nextPathAfterLogin();
+      setTimeout(() => router.push(destination), 900);
       return;
     }
     setTimeout(() => {

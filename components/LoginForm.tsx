@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { nextPathAfterLogin } from "@/lib/equipmentSync";
 import { randomNickname } from "@/lib/nickname";
 
 type Mode = "login" | "signup";
@@ -135,7 +136,8 @@ export default function LoginForm({ notice }: { notice?: string }) {
         }
         return;
       }
-      router.push("/equipment");
+      // 기구를 한 번 고른 계정은 바로 운동 시작으로 간다.
+      router.push(await nextPathAfterLogin());
       router.refresh();
       return;
     }

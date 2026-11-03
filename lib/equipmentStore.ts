@@ -3,6 +3,7 @@ import { EQUIPMENT_BY_ID } from "./equipment";
 /**
  * 내가 가진 기구를 담는 저장소. 앱 전체에서 이것 하나만 쓴다.
  * id 하나가 한 번만 들어가므로 어느 부위 화면에서 골라도 중복 저장되지 않는다.
+ * 로그인한 사람은 이 내용이 계정(Supabase)에도 저장된다. (lib/equipmentSync.ts)
  */
 const STORAGE_KEY = "chedansil.equipment.v1";
 
@@ -12,6 +13,9 @@ let selected: readonly string[] = EMPTY;
 let loaded = false;
 let storageListening = false;
 const listeners = new Set<() => void>();
+
+/** 계정에서 기구 정보를 불러오는 중인지. 불러오기 전에는 '선택한 기구 없음' 안내를 띄우지 않는다. */
+let syncing = true;
 
 /** 알 수 없는 id 와 중복을 걸러 정렬한 새 배열을 만든다. */
 function normalize(ids: unknown): readonly string[] {
@@ -63,6 +67,20 @@ export function getServerSnapshot(): readonly string[] {
   return EMPTY;
 }
 
+export function getSyncingSnapshot(): boolean {
+  return syncing;
+}
+
+export function getServerSyncingSnapshot(): boolean {
+  return true;
+}
+
+export function setSyncing(value: boolean) {
+  if (syncing === value) return;
+  syncing = value;
+  emit();
+}
+
 export function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   if (!storageListening && typeof window !== "undefined") {
@@ -89,6 +107,14 @@ export function setEquipment(id: string, on: boolean) {
 
 export function toggleEquipment(id: string) {
   setEquipment(id, !isSelected(id));
+}
+
+/** 계정에서 불러온 목록으로 통째로 바꾼다. 같은 내용이면 아무것도 바꾸지 않는다. */
+export function replaceEquipment(ids: unknown) {
+  const next = normalize(ids);
+  const current = getSnapshot();
+  if (next.length === current.length && next.every((id, i) => id === current[i])) return;
+  commit(next);
 }
 
 export function clearEquipment() {

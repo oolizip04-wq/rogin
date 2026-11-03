@@ -17,11 +17,6 @@ import { useEquipmentPhotos } from "@/lib/useEquipmentPhotos";
 import { useOwnedEquipment } from "@/lib/useOwnedEquipment";
 import type { BodyPart, Equipment } from "@/lib/types";
 
-function partsText(item: Equipment, current: BodyPart): string {
-  const others = item.parts.filter((p) => p !== current);
-  return others.length ? `다른 부위: ${others.map((p) => BODY_PART_LABELS[p]).join("·")}` : "";
-}
-
 /**
  * 운동 부위별로 기구를 고르는 화면.
  * 같은 기구는 어느 부위에서 골라도 하나의 선택 상태(equipmentStore)를 함께 쓴다.
@@ -35,7 +30,6 @@ export default function EquipmentPicker() {
   const unclassified = unclassifiedEquipment();
 
   function renderRow(item: Equipment) {
-    const hint = partsText(item, part);
     // 실제 사진이 있으면 사진, 없으면 임시 일러스트
     const drawing = EQUIPMENT_ILLUSTRATIONS.has(item.id)
       ? `/equipment/${item.id}.svg`
@@ -57,12 +51,6 @@ export default function EquipmentPicker() {
             />
           )}{" "}
           {item.name}
-          {hint && (
-            <>
-              {" "}
-              <small>({hint})</small>
-            </>
-          )}
         </label>
         <details>
           <summary>

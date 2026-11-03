@@ -14,7 +14,7 @@ import type { AreaLabel, BodyPart } from "@/lib/types";
  * ① 오늘 운동할 부위 → ② 세부 부위 → ③ 내가 고른 기구로 할 수 있는 운동
  */
 export default function WorkoutStart() {
-  const { ids } = useOwnedEquipment();
+  const { ids, syncing } = useOwnedEquipment();
   const [part, setPart] = useState<BodyPart | null>(null);
   const [picked, setPicked] = useState<AreaLabel[]>([]);
 
@@ -45,7 +45,7 @@ export default function WorkoutStart() {
 
   return (
     <div>
-      {ids.length === 0 && (
+      {!syncing && ids.length === 0 && (
         <p role="status">
           선택한 기구가 없어서 <strong>맨몸 운동</strong>만 보입니다.{" "}
           <Link href="/equipment">기구 선택하러 가기</Link>
