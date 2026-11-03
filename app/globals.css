@@ -17,7 +17,8 @@ html {
 html,
 body {
   max-width: 100vw;
-  overflow-x: hidden;
+  /* hidden 이면 body 가 스크롤 상자가 되어 position: sticky 가 먹지 않는다. clip 은 가로 넘침만 잘라 준다. */
+  overflow-x: clip;
 }
 
 body {
