@@ -32,6 +32,14 @@ alter table public.profiles drop constraint if exists profiles_equipment_ids_siz
 alter table public.profiles
   add constraint profiles_equipment_ids_size check (cardinality(equipment_ids) <= 200);
 
+-- 내 루틴을 계정에 저장한다. (lib/routineSync.ts)
+--   routines : [{ id, name, exerciseIds: [...] }, ...]  (루틴 이름과 운동 순서)
+alter table public.profiles add column if not exists routines jsonb not null default '[]'::jsonb;
+alter table public.profiles drop constraint if exists profiles_routines_shape;
+alter table public.profiles
+  add constraint profiles_routines_shape
+  check (jsonb_typeof(routines) = 'array' and jsonb_array_length(routines) <= 50);
+
 alter table public.units enable row level security;
 alter table public.profiles enable row level security;
 
@@ -40,9 +48,9 @@ alter table public.profiles enable row level security;
 revoke select on public.units from anon;
 grant select on public.units to authenticated;
 grant select on public.profiles to authenticated;
--- 닉네임과 내 기구만 직접 수정할 수 있다. (소속 부대 칸은 지금 쓰지 않는다)
+-- 닉네임, 내 기구, 내 루틴만 직접 수정할 수 있다. (소속 부대 칸은 지금 쓰지 않는다)
 revoke update on public.profiles from authenticated;
-grant update (nickname, equipment_ids, equipment_set) on public.profiles to authenticated;
+grant update (nickname, equipment_ids, equipment_set, routines) on public.profiles to authenticated;
 
 -- ───── RLS 정책 ─────
 drop policy if exists "units are readable by everyone" on public.units;

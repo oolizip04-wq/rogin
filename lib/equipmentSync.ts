@@ -57,8 +57,13 @@ export async function saveEquipmentProfile(
   }
 }
 
-/** 로그인한 직후 어디로 보낼지. 기구를 한 번 골랐던 계정은 바로 운동 시작으로 간다. */
+/**
+ * 로그인한 직후 어디로 보낼지.
+ * 기구를 이미 등록한 계정(선택을 마쳤거나 고른 기구가 하나라도 있는 계정)은
+ * 바로 운동 시작(가능한 운동 보기 · 내 루틴 보기 · 루틴 만들기)으로 간다.
+ */
 export async function nextPathAfterLogin(): Promise<"/workout" | "/equipment"> {
   const profile = await loadEquipmentProfile();
-  return profile?.confirmed ? "/workout" : "/equipment";
+  const registered = profile ? profile.confirmed || profile.ids.length > 0 : false;
+  return registered ? "/workout" : "/equipment";
 }

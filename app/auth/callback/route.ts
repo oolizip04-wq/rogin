@@ -17,16 +17,18 @@ export async function GET(request: Request) {
     if (!error) {
       if (safeNext) return NextResponse.redirect(`${origin}${safeNext}`);
 
-      // 기구를 한 번 고른 계정은 바로 운동 시작으로, 아니면 기구 선택으로 보낸다.
+      // 기구를 이미 등록한 계정은 바로 운동 시작으로, 아니면 기구 선택으로 보낸다.
       let destination = "/equipment";
       const { data: auth } = await supabase.auth.getUser();
       if (auth.user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("equipment_set")
+          .select("equipment_set, equipment_ids")
           .eq("id", auth.user.id)
           .maybeSingle();
-        if (profile?.equipment_set === true) destination = "/workout";
+        const hasEquipment =
+          Array.isArray(profile?.equipment_ids) && profile.equipment_ids.length > 0;
+        if (profile?.equipment_set === true || hasEquipment) destination = "/workout";
       }
       return NextResponse.redirect(`${origin}${destination}`);
     }

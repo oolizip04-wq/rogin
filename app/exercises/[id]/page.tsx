@@ -35,7 +35,7 @@ export default async function ExerciseDetailPage({ params }: Props) {
   return (
     <main style={{ maxWidth: 640, margin: "0 auto", padding: 16 }}>
       <p>
-        <Link href="/workout">← 운동 목록</Link>
+        <Link href="/workout/available">← 운동 목록</Link>
       </p>
 
       <h1>{exercise.name}</h1>
