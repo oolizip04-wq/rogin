@@ -22,10 +22,10 @@ export default function Landing() {
   const [entering, setEntering] = useState(false);
 
   // 전역일을 모르면 'D-day' 라는 글자를 그대로 보여 주고, 알면 D-123 처럼 남은 날을 보여 준다.
-  // 전역일이 이미 지났으면 이용이 끝났다고 알려 준다.
+  // 전역일 당일(D-DAY)이거나 이미 지났으면 이용이 끝났다고 알려 준다.
   const days = daysUntil(profile?.dischargeDate);
   const dday = formatDday(days);
-  const finished = days !== null && days < 0;
+  const finished = days !== null && days <= 0;
   const intro = phase === "intro";
 
   async function handleEnter() {
@@ -82,7 +82,7 @@ export default function Landing() {
                   opacity: 0.9,
                 }}
               >
-                체단실 이용 종료까지
+                체단실 이용 종료
               </span>
               <span
                 style={{
