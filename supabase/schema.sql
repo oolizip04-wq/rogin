@@ -164,3 +164,270 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- ═════════════════════════════════════════════════════════════
+--  운동별 댓글 · 대댓글 · 좋아요/싫어요 · 신고
+--  표는 사이트에서 직접 읽고 쓰지 못하게 막아 두고, 아래 함수로만 다룬다.
+--  (그래야 남의 댓글을 고치거나, 좋아요 수를 조작하거나, 신고 기록을 훔쳐보지 못한다)
+-- ═════════════════════════════════════════════════════════════
+
+create table if not exists public.comments (
+  id uuid primary key default gen_random_uuid(),
+  exercise_id text not null check (exercise_id ~ '^[a-z0-9-]{1,80}$'),
+  -- 대댓글이면 달린 댓글의 id. 대댓글은 한 단계만 있고, 대댓글에 다는 답글도 원래 댓글 밑에 붙는다.
+  parent_id uuid references public.comments (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  body text not null check (char_length(btrim(body)) between 1 and 500),
+  created_at timestamptz not null default now()
+);
+create index if not exists comments_exercise_idx on public.comments (exercise_id, created_at);
+create index if not exists comments_parent_idx on public.comments (parent_id);
+
+-- 좋아요(1) / 싫어요(-1). 한 사람이 댓글 하나에 하나만.
+create table if not exists public.comment_votes (
+  comment_id uuid not null references public.comments (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  value smallint not null check (value in (1, -1)),
+  created_at timestamptz not null default now(),
+  primary key (comment_id, user_id)
+);
+
+-- 신고. 한 사람이 댓글 하나를 한 번만 신고할 수 있고, 3명이 신고하면 다른 사람에게는 자동으로 가려진다.
+create table if not exists public.comment_reports (
+  comment_id uuid not null references public.comments (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  reason text not null check (reason in ('욕설·비방', '군사 보안 위반', '광고·도배', '기타')),
+  created_at timestamptz not null default now(),
+  primary key (comment_id, user_id)
+);
+
+alter table public.comments enable row level security;
+alter table public.comment_votes enable row level security;
+alter table public.comment_reports enable row level security;
+revoke all on public.comments from anon, authenticated;
+revoke all on public.comment_votes from anon, authenticated;
+revoke all on public.comment_reports from anon, authenticated;
+
+-- 좋아요·싫어요 점수 (윌슨 점수). 표가 적은 댓글이 우연히 맨 위로 오르지 않게 하고, 싫어요가 많으면 아래로 내려간다.
+drop function if exists public.comment_score(bigint, bigint);
+create function public.comment_score(p_likes bigint, p_dislikes bigint)
+returns double precision
+language sql
+immutable
+as $$
+  select case
+    when (p_likes + p_dislikes) = 0 then 0::double precision
+    else (
+      (p_likes::double precision / (p_likes + p_dislikes))
+      + 1.9208 / (p_likes + p_dislikes)
+      - 1.96 * sqrt(
+          (
+            (p_likes::double precision / (p_likes + p_dislikes))
+            * (1 - (p_likes::double precision / (p_likes + p_dislikes)))
+            + 0.9604 / (p_likes + p_dislikes)
+          ) / (p_likes + p_dislikes)
+        )
+    ) / (1 + 3.8416 / (p_likes + p_dislikes))
+  end;
+$$;
+
+-- 한 운동의 댓글 목록. 로그인한 사람만 볼 수 있다.
+-- 신고 3건 이상이면 본문을 빼고 hidden = true 로 돌려준다. (쓴 본인에게는 본문이 보인다)
+drop function if exists public.list_comments(text);
+create function public.list_comments(p_exercise_id text)
+returns table (
+  id uuid,
+  parent_id uuid,
+  body text,
+  created_at timestamptz,
+  nickname text,
+  is_mine boolean,
+  like_count bigint,
+  dislike_count bigint,
+  my_vote smallint,
+  hidden boolean
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with base as (
+    select
+      c.id,
+      c.parent_id,
+      c.body,
+      c.created_at,
+      c.user_id,
+      p.nickname,
+      (select count(*) from public.comment_votes v where v.comment_id = c.id and v.value = 1) as likes,
+      (select count(*) from public.comment_votes v where v.comment_id = c.id and v.value = -1) as dislikes,
+      (select count(*) from public.comment_reports r where r.comment_id = c.id) as reports,
+      (select v.value from public.comment_votes v
+        where v.comment_id = c.id and v.user_id = (select auth.uid())) as my_value
+    from public.comments c
+    left join public.profiles p on p.id = c.user_id
+    where c.exercise_id = p_exercise_id
+      and (select auth.uid()) is not null
+  )
+  select
+    b.id,
+    b.parent_id,
+    case when b.reports >= 3 and b.user_id <> (select auth.uid()) then null else b.body end,
+    b.created_at,
+    b.nickname,
+    (b.user_id = (select auth.uid())),
+    b.likes,
+    b.dislikes,
+    coalesce(b.my_value, 0)::smallint,
+    (b.reports >= 3)
+  from base b
+  order by public.comment_score(b.likes, b.dislikes) desc, b.created_at desc
+  limit 300;
+$$;
+
+-- 댓글 쓰기. p_parent_id 가 있으면 대댓글.
+drop function if exists public.add_comment(text, uuid, text);
+create function public.add_comment(p_exercise_id text, p_parent_id uuid, p_body text)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_body text := btrim(coalesce(p_body, ''));
+  v_parent uuid := null;
+  v_id uuid;
+begin
+  if v_uid is null then
+    raise exception 'not logged in';
+  end if;
+  if p_exercise_id !~ '^[a-z0-9-]{1,80}$' then
+    raise exception 'invalid exercise';
+  end if;
+  if char_length(v_body) < 1 or char_length(v_body) > 500 then
+    raise exception 'invalid body';
+  end if;
+  -- 도배 방지: 1분에 5개까지
+  if (
+    select count(*) from public.comments
+    where user_id = v_uid and created_at > now() - interval '1 minute'
+  ) >= 5 then
+    raise exception 'too many comments';
+  end if;
+
+  if p_parent_id is not null then
+    -- 대댓글에 단 답글도 원래 댓글 밑에 붙인다.
+    select coalesce(c.parent_id, c.id) into v_parent
+    from public.comments c
+    where c.id = p_parent_id and c.exercise_id = p_exercise_id;
+    if v_parent is null then
+      raise exception 'parent not found';
+    end if;
+  end if;
+
+  insert into public.comments (exercise_id, parent_id, user_id, body)
+  values (p_exercise_id, v_parent, v_uid, v_body)
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+
+-- 내 댓글 지우기. (그 댓글에 달린 대댓글, 좋아요, 신고도 함께 지워진다)
+drop function if exists public.delete_comment(uuid);
+create function public.delete_comment(p_comment_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+begin
+  if v_uid is null then
+    raise exception 'not logged in';
+  end if;
+  delete from public.comments where id = p_comment_id and user_id = v_uid;
+end;
+$$;
+
+-- 좋아요(1) / 싫어요(-1) / 취소(0). 내 댓글에는 누를 수 없다.
+drop function if exists public.vote_comment(uuid, smallint);
+create function public.vote_comment(p_comment_id uuid, p_value smallint)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_owner uuid;
+begin
+  if v_uid is null then
+    raise exception 'not logged in';
+  end if;
+  if p_value not in (-1, 0, 1) then
+    raise exception 'invalid value';
+  end if;
+  select c.user_id into v_owner from public.comments c where c.id = p_comment_id;
+  if v_owner is null then
+    raise exception 'comment not found';
+  end if;
+  if v_owner = v_uid then
+    raise exception 'cannot vote own comment';
+  end if;
+
+  if p_value = 0 then
+    delete from public.comment_votes where comment_id = p_comment_id and user_id = v_uid;
+  else
+    insert into public.comment_votes (comment_id, user_id, value)
+    values (p_comment_id, v_uid, p_value)
+    on conflict (comment_id, user_id) do update set value = excluded.value;
+  end if;
+end;
+$$;
+
+-- 신고. 내 댓글은 신고할 수 없고, 같은 댓글을 두 번 신고해도 한 번만 센다.
+drop function if exists public.report_comment(uuid, text);
+create function public.report_comment(p_comment_id uuid, p_reason text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_owner uuid;
+begin
+  if v_uid is null then
+    raise exception 'not logged in';
+  end if;
+  if p_reason not in ('욕설·비방', '군사 보안 위반', '광고·도배', '기타') then
+    raise exception 'invalid reason';
+  end if;
+  select c.user_id into v_owner from public.comments c where c.id = p_comment_id;
+  if v_owner is null then
+    raise exception 'comment not found';
+  end if;
+  if v_owner = v_uid then
+    raise exception 'cannot report own comment';
+  end if;
+
+  insert into public.comment_reports (comment_id, user_id, reason)
+  values (p_comment_id, v_uid, p_reason)
+  on conflict (comment_id, user_id) do nothing;
+end;
+$$;
+
+revoke all on function public.comment_score(bigint, bigint) from public, anon, authenticated;
+revoke all on function public.list_comments(text) from public, anon;
+revoke all on function public.add_comment(text, uuid, text) from public, anon;
+revoke all on function public.delete_comment(uuid) from public, anon;
+revoke all on function public.vote_comment(uuid, smallint) from public, anon;
+revoke all on function public.report_comment(uuid, text) from public, anon;
+grant execute on function public.list_comments(text) to authenticated;
+grant execute on function public.add_comment(text, uuid, text) to authenticated;
+grant execute on function public.delete_comment(uuid) to authenticated;
+grant execute on function public.vote_comment(uuid, smallint) to authenticated;
+grant execute on function public.report_comment(uuid, text) to authenticated;

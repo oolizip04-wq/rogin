@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Comments from "@/components/Comments";
 import MuscleMap from "@/components/MuscleMap";
 import { EXERCISES, bodyPartsOf, getExercise } from "@/lib/data";
 import { BODY_PART_LABELS, EQUIPMENT_BY_ID } from "@/lib/equipment";
@@ -81,9 +82,7 @@ export default async function ExerciseDetailPage({ params }: Props) {
 
       <section>
         <h2>댓글</h2>
-        <p>
-          <small>준비 중입니다. 곧 이 운동에 대한 팁과 질문을 나눌 수 있습니다.</small>
-        </p>
+        <Comments exerciseId={exercise.id} />
       </section>
     </main>
   );
