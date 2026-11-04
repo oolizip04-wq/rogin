@@ -2,45 +2,39 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import MuscleMap from "@/components/MuscleMap";
 import { EXERCISES } from "@/lib/data";
 import { BODY_PARTS, BODY_PART_LABELS } from "@/lib/equipment";
 import { filterByAreas, filterExercises } from "@/lib/filter";
-import { AREAS_BY_PART, AREA_NOTE } from "@/lib/labels";
+import { AREAS_BY_PART, AREA_INFO, AREA_NOTE } from "@/lib/labels";
+import { useExercisePhotos } from "@/lib/useExercisePhotos";
 import { useOwnedEquipment } from "@/lib/useOwnedEquipment";
-import type { AreaLabel, BodyPart } from "@/lib/types";
+import type { AreaLabel, BodyPart, Exercise } from "@/lib/types";
+
+/** 운동이 속한 큰 부위 (가장 먼저 적힌 세부 부위 기준) */
+function primaryPart(ex: Exercise): BodyPart {
+  return AREA_INFO[ex.areas[0]].part;
+}
 
 /**
- * 운동 시작 화면.
- * ① 오늘 운동할 부위 → ② 세부 부위 → ③ 내가 고른 기구로 할 수 있는 운동
+ * 내 체단실에서 가능한 운동.
+ * 부위를 세로로 나열하고, 각 부위 안에서 운동을 한 줄에 두 개씩 이미지와 함께 보여 준다.
+ * 운동 이미지는 Supabase Storage 의 exercises 저장소에 올린 사진(파일 이름 = 운동 id)이고,
+ * 아직 없으면 그 운동이 쓰는 근육을 칠한 몸 그림을 대신 보여 준다.
  */
 export default function WorkoutStart() {
   const { ids, syncing } = useOwnedEquipment();
-  const [part, setPart] = useState<BodyPart | null>(null);
-  const [picked, setPicked] = useState<AreaLabel[]>([]);
-
-  const areas = part ? AREAS_BY_PART[part] : [];
-  // 세부 부위를 하나도 안 고르면 그 부위 전체
-  const targetAreas = picked.length > 0 ? picked : areas;
+  const photos = useExercisePhotos();
+  const [filters, setFilters] = useState<Partial<Record<BodyPart, AreaLabel[]>>>({});
 
   const available = useMemo(() => filterExercises(EXERCISES, ids), [ids]);
-  const results = useMemo(
-    () => (part ? filterByAreas(available, targetAreas) : []),
-    [available, part, targetAreas],
-  );
-  const partTotal = useMemo(
-    () => (part ? filterByAreas(EXERCISES, targetAreas).length : 0),
-    [part, targetAreas],
-  );
 
-  function choosePart(next: BodyPart) {
-    setPart(next);
-    setPicked([]);
-  }
-
-  function toggleArea(area: AreaLabel) {
-    setPicked((prev) =>
-      prev.includes(area) ? prev.filter((a) => a !== area) : [...prev, area],
-    );
+  function toggleArea(part: BodyPart, area: AreaLabel) {
+    setFilters((prev) => {
+      const cur = prev[part] ?? [];
+      const next = cur.includes(area) ? cur.filter((a) => a !== area) : [...cur, area];
+      return { ...prev, [part]: next };
+    });
   }
 
   return (
@@ -48,83 +42,106 @@ export default function WorkoutStart() {
       {!syncing && ids.length === 0 && (
         <p role="status">
           선택한 기구가 없어서 <strong>맨몸 운동</strong>만 보입니다.{" "}
-          <Link href="/equipment">기구 선택하러 가기</Link>
+          <Link href="/equipment?edit=1">기구 선택하러 가기</Link>
         </p>
       )}
 
-      <section>
-        <h2>오늘 어디를 운동할까요?</h2>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {BODY_PARTS.map((p) => (
-            <button
-              key={p}
-              type="button"
-              aria-pressed={part === p}
-              onClick={() => choosePart(p)}
-              style={{ fontWeight: part === p ? 700 : 400, padding: "8px 16px" }}
-            >
-              {BODY_PART_LABELS[p]}
-            </button>
-          ))}
-        </div>
-      </section>
+      {BODY_PARTS.map((part) => {
+        const inPart = available.filter((ex) => primaryPart(ex) === part);
+        const total = EXERCISES.filter((ex) => primaryPart(ex) === part).length;
+        if (total === 0) return null;
 
-      {part && (
-        <section>
-          <h2>{BODY_PART_LABELS[part]} 세부 부위</h2>
-          <p>
-            <small>
-              여러 개를 고를 수 있습니다. 아무것도 안 고르면 {BODY_PART_LABELS[part]} 전체를 보여 줍니다.
-            </small>
-          </p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {areas.map((area) => (
-              <label key={area}>
-                <input
-                  type="checkbox"
-                  checked={picked.includes(area)}
-                  onChange={() => toggleArea(area)}
-                />{" "}
-                {area}
-                {AREA_NOTE[area] && <small> ({AREA_NOTE[area]})</small>}
-              </label>
-            ))}
-          </div>
-        </section>
-      )}
+        const areas = AREAS_BY_PART[part];
+        const picked = filters[part] ?? [];
+        const list = picked.length > 0 ? filterByAreas(inPart, picked) : inPart;
 
-      {part && (
-        <section>
-          <h2>할 수 있는 운동 ({results.length})</h2>
-          {results.length === 0 ? (
-            <p>
-              {partTotal === 0
-                ? "이 부위에는 아직 등록된 운동이 없습니다."
-                : "지금 선택한 기구로는 할 수 있는 운동이 없습니다."}{" "}
-              {partTotal > 0 && <Link href="/equipment">기구 더 선택하기</Link>}
-            </p>
-          ) : (
-            <ul>
-              {results.map((ex) => (
-                <li key={ex.id}>
-                  <Link href={`/exercises/${ex.id}`}>
-                    <strong>{ex.name}</strong>
-                  </Link>{" "}
-                  <small>{ex.areas.join(" · ")}</small>
-                </li>
-              ))}
-            </ul>
-          )}
-          {partTotal > results.length && results.length > 0 && (
-            <p>
-              <small>
-                기구가 더 있으면 할 수 있는 운동이 {partTotal - results.length}개 더 있습니다.{" "}
-                <Link href="/equipment">기구 선택하기</Link>
+        return (
+          <section key={part} style={{ marginBottom: 28 }}>
+            <h2 style={{ marginBottom: 6 }}>
+              {BODY_PART_LABELS[part]}{" "}
+              <small style={{ fontWeight: 400 }}>
+                ({list.length}개{total > inPart.length ? ` · 기구가 더 있으면 ${total - inPart.length}개 더` : ""})
               </small>
-            </p>
-          )}
-        </section>
-      )}
+            </h2>
+
+            {areas.length > 1 && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                {areas.map((area) => {
+                  const on = picked.includes(area);
+                  return (
+                    <button
+                      key={area}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => toggleArea(part, area)}
+                      style={{ fontSize: 13, padding: "3px 10px", fontWeight: on ? 700 : 400 }}
+                      title={AREA_NOTE[area]}
+                    >
+                      {area}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {list.length === 0 ? (
+              <p>
+                <small>
+                  {inPart.length === 0
+                    ? "지금 가진 기구로 할 수 있는 운동이 아직 없습니다."
+                    : "고른 세부 부위에 해당하는 운동이 없습니다."}
+                </small>
+              </p>
+            ) : (
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: 12,
+                }}
+              >
+                {list.map((ex) => (
+                  <li key={ex.id}>
+                    <Link
+                      href={`/exercises/${ex.id}`}
+                      style={{
+                        display: "block",
+                        textDecoration: "none",
+                        color: "inherit",
+                        border: "1px solid currentColor",
+                        borderRadius: 10,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div style={{ aspectRatio: "4 / 3", background: "#eef1f5" }}>
+                        {photos[ex.id] ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={photos[ex.id]}
+                            alt={`${ex.name} 운동법`}
+                            loading="lazy"
+                            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                          />
+                        ) : (
+                          <MuscleMap muscles={ex.muscles} compact />
+                        )}
+                      </div>
+                      <div style={{ padding: "8px 10px" }}>
+                        <strong>{ex.name}</strong>
+                        <br />
+                        <small>{ex.areas.join(" · ")}</small>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }

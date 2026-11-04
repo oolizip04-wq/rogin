@@ -31,9 +31,17 @@ function Region({
 }
 
 /** 앞·뒤 몸 그림. 모양은 단순화한 임시 그림이다. */
-function Body({ view, on }: { view: "front" | "back"; on: Set<Muscle> }) {
+function Body({
+  view,
+  on,
+  width = 130,
+}: {
+  view: "front" | "back";
+  on: Set<Muscle>;
+  width?: number;
+}) {
   return (
-    <svg viewBox="0 0 100 210" width="130" role="presentation" aria-hidden="true">
+    <svg viewBox="0 0 100 210" width={width} role="presentation" aria-hidden="true">
       {/* 몸 바탕 */}
       <g fill={BASE} stroke={IDLE_STROKE} strokeWidth={1}>
         <circle cx={50} cy={15} r={11} />
@@ -135,9 +143,38 @@ function Body({ view, on }: { view: "front" | "back"; on: Set<Muscle> }) {
   );
 }
 
-export default function MuscleMap({ muscles }: { muscles: Muscle[] }) {
+export default function MuscleMap({
+  muscles,
+  compact = false,
+}: {
+  muscles: Muscle[];
+  /** 카드 안에 작게 넣는 모양. 설명 글 없이 몸 그림 두 개만 보여 준다. */
+  compact?: boolean;
+}) {
   const on = new Set(muscles);
   const names = muscles.map((m) => MUSCLE_LABELS[m]).join(", ");
+
+  if (compact) {
+    return (
+      <div
+        role="img"
+        aria-label={`운동 부위: ${names}`}
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 8,
+          background: "#eef1f5",
+          color: "#495057",
+        }}
+      >
+        <Body view="front" on={on} width={46} />
+        <Body view="back" on={on} width={46} />
+      </div>
+    );
+  }
 
   return (
     <figure style={{ margin: 0 }}>

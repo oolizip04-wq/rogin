@@ -1,8 +1,8 @@
 import Link from "next/link";
 import AuthStatus from "@/components/AuthStatus";
 import EquipmentSync from "@/components/EquipmentSync";
-import RoutineList from "@/components/RoutineList";
 import RoutineSync from "@/components/RoutineSync";
+import RoutinesApp from "@/components/RoutinesApp";
 
 export default function MyRoutinesPage() {
   return (
@@ -16,18 +16,13 @@ export default function MyRoutinesPage() {
           alignItems: "center",
         }}
       >
-        <h1>내 루틴</h1>
+        <h1>나의 루틴</h1>
         <AuthStatus />
       </header>
       <p>
         <Link href="/workout">← 운동 시작</Link>
       </p>
-      <RoutineList />
-      <p>
-        <Link href="/routines/new">
-          <strong>+ 루틴 만들기</strong>
-        </Link>
-      </p>
+      <RoutinesApp />
     </main>
   );
 }

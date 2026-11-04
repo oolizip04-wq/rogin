@@ -100,7 +100,7 @@ export default function EquipmentPicker() {
           {item.name}
           {SHOW_PART_BADGE && (
             <small style={badgeStyle}>
-              {item.parts.length > 1 ? `여러 부위 가능 · ${partNames}` : partNames}
+              {partNames}
             </small>
           )}
           {selected && (
@@ -257,6 +257,8 @@ export default function EquipmentPicker() {
           background: "Canvas",
           color: "CanvasText",
           borderTop: "1px solid currentColor",
+          // 앱으로 열렸을 때 아래 홈 막대 영역을 피한다.
+          paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
         <div style={{ maxWidth: 640, margin: "0 auto" }}>

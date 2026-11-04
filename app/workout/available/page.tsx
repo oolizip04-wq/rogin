@@ -15,7 +15,7 @@ export default function AvailableWorkoutPage() {
           alignItems: "center",
         }}
       >
-        <h1>가능한 운동</h1>
+        <h1 style={{ fontSize: "1.5rem" }}>내 체단실에서 가능한 운동</h1>
         <AuthStatus />
       </header>
       <p>

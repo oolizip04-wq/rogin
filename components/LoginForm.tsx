@@ -17,6 +17,8 @@ export default function LoginForm({ notice }: { notice?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [enlistDate, setEnlistDate] = useState("");
+  const [dischargeDate, setDischargeDate] = useState("");
   const [message, setMessage] = useState<string | null>(notice ?? null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -154,6 +156,14 @@ export default function LoginForm({ notice }: { notice?: string }) {
       setError("닉네임 중복확인을 해주세요.");
       return;
     }
+    if (!enlistDate || !dischargeDate) {
+      setError("입대일과 전역일을 선택하세요.");
+      return;
+    }
+    if (dischargeDate <= enlistDate) {
+      setError("전역일은 입대일보다 뒤여야 합니다.");
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email: emailValue,
@@ -165,6 +175,8 @@ export default function LoginForm({ notice }: { notice?: string }) {
           // display_name 은 Supabase 대시보드의 Users 목록에 이름으로 보인다.
           display_name: nicknameValue,
           nickname: nicknameValue,
+          enlist_date: enlistDate,
+          discharge_date: dischargeDate,
         },
       },
     });
@@ -313,6 +325,37 @@ export default function LoginForm({ notice }: { notice?: string }) {
                 error: "2~20자로 입력하거나 잠시 후 다시 시도하세요.",
               }}
             />
+          </p>
+
+          <p>
+            <label>
+              입대일
+              <br />
+              <input
+                type="date"
+                value={enlistDate}
+                onChange={(e) => setEnlistDate(e.target.value)}
+                required
+                min="2000-01-01"
+                max="2100-12-31"
+                style={{ width: "100%" }}
+              />
+            </label>
+          </p>
+          <p>
+            <label>
+              전역일 (예정일)
+              <br />
+              <input
+                type="date"
+                value={dischargeDate}
+                onChange={(e) => setDischargeDate(e.target.value)}
+                required
+                min="2000-01-01"
+                max="2100-12-31"
+                style={{ width: "100%" }}
+              />
+            </label>
           </p>
         </>
       )}

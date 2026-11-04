@@ -19,7 +19,7 @@ export default function EquipmentBar() {
       <span>
         내 기구 <strong>{syncing ? "…" : `${ids.length}종`}</strong>
       </span>
-      <Link href="/equipment">기구 추가·수정하기</Link>
+      <Link href="/equipment?edit=1">기구 추가·수정하기</Link>
     </p>
   );
 }

@@ -40,6 +40,14 @@ alter table public.profiles
   add constraint profiles_routines_shape
   check (jsonb_typeof(routines) = 'array' and jsonb_array_length(routines) <= 50);
 
+-- 입대일·전역일. 전역까지 남은 날(D-day)을 보여 주는 데만 쓴다. (모르면 비워 둔다)
+alter table public.profiles add column if not exists enlist_date date;
+alter table public.profiles add column if not exists discharge_date date;
+alter table public.profiles drop constraint if exists profiles_service_dates_order;
+alter table public.profiles
+  add constraint profiles_service_dates_order
+  check (enlist_date is null or discharge_date is null or discharge_date > enlist_date);
+
 alter table public.units enable row level security;
 alter table public.profiles enable row level security;
 
@@ -50,7 +58,8 @@ grant select on public.units to authenticated;
 grant select on public.profiles to authenticated;
 -- 닉네임, 내 기구, 내 루틴만 직접 수정할 수 있다. (소속 부대 칸은 지금 쓰지 않는다)
 revoke update on public.profiles from authenticated;
-grant update (nickname, equipment_ids, equipment_set, routines) on public.profiles to authenticated;
+grant update (nickname, equipment_ids, equipment_set, routines, enlist_date, discharge_date)
+  on public.profiles to authenticated;
 
 -- ───── RLS 정책 ─────
 drop policy if exists "units are readable by everyone" on public.units;
@@ -73,6 +82,28 @@ create policy "users update own profile"
   using (id = (select auth.uid()))
   with check (id = (select auth.uid()));
 
+-- ───── 운영자 닉네임 보호 ─────
+-- '운영자', '관리자' 같은 이름은 일반 사용자가 쓸 수 없다. (운영자는 SQL Editor 에서 직접 정한다)
+drop function if exists public.protect_reserved_nickname() cascade;
+create function public.protect_reserved_nickname()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if public.is_reserved_nickname(new.nickname)
+     and current_user not in ('postgres', 'supabase_admin', 'service_role') then
+    raise exception 'reserved nickname';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_protect_reserved_nickname on public.profiles;
+create trigger profiles_protect_reserved_nickname
+  before insert or update of nickname on public.profiles
+  for each row execute function public.protect_reserved_nickname();
+
 -- ───── 기구 사진 저장소 ─────
 -- 사진은 Supabase 대시보드 Storage > equipment 에서 올린다. 파일 이름은 기구 id 와 같게 한다.
 -- (예: dumbbell.jpg). 누구나 보고, 올리고 지우는 건 대시보드(관리자)에서만 한다.
@@ -89,9 +120,36 @@ create policy "equipment photos are readable by everyone"
   to anon, authenticated
   using (bucket_id = 'equipment');
 
+-- 운동 설명 이미지 저장소. 파일 이름은 운동 id 와 같게 한다. (예: pushup.jpg)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('exercises', 'exercises', true, 2097152, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public = true,
+      file_size_limit = 2097152,
+      allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp'];
+
+drop policy if exists "exercise images are readable by everyone" on storage.objects;
+create policy "exercise images are readable by everyone"
+  on storage.objects for select
+  to anon, authenticated
+  using (bucket_id = 'exercises');
+
 -- ───── 중복확인 함수 ─────
 -- 회원가입 화면의 [중복확인] 버튼이 부른다. 사용 가능하면 true.
 -- 주의: 로그인 전에도 호출할 수 있어서, 이메일이 가입돼 있는지 누구나 물어볼 수 있다.
+-- 운영자만 쓸 수 있는 닉네임. 가입 확인, 가입 처리, 닉네임 수정에서 모두 같은 목록을 쓴다.
+drop function if exists public.is_reserved_nickname(text);
+create function public.is_reserved_nickname(p_nickname text)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select lower(btrim(coalesce(p_nickname, ''))) in (
+    '운영자', '관리자', '운영진', '관리', 'admin', 'administrator', 'operator', 'moderator'
+  );
+$$;
+
 drop function if exists public.check_nickname_available(text);
 create function public.check_nickname_available(p_nickname text)
 returns boolean
@@ -100,10 +158,11 @@ stable
 security definer
 set search_path = ''
 as $$
-  select not exists (
-    select 1 from public.profiles
-    where lower(nickname) = lower(btrim(p_nickname))
-  );
+  select not public.is_reserved_nickname(p_nickname)
+    and not exists (
+      select 1 from public.profiles
+      where lower(nickname) = lower(btrim(p_nickname))
+    );
 $$;
 
 drop function if exists public.check_email_available(text);
@@ -137,10 +196,26 @@ set search_path = ''
 as $$
 declare
   v_nickname text;
+  v_enlist date;
+  v_discharge date;
 begin
   v_nickname := left(nullif(btrim(new.raw_user_meta_data ->> 'nickname'), ''), 20);
 
-  if v_nickname is null or char_length(v_nickname) < 2 then
+  -- 입대일·전역일. 형식이 틀리거나 순서가 이상하면 둘 다 비워 두고 가입은 그대로 진행한다.
+  begin
+    v_enlist := (new.raw_user_meta_data ->> 'enlist_date')::date;
+    v_discharge := (new.raw_user_meta_data ->> 'discharge_date')::date;
+  exception when others then
+    v_enlist := null;
+    v_discharge := null;
+  end;
+  if v_enlist is not null and v_discharge is not null and v_discharge <= v_enlist then
+    v_enlist := null;
+    v_discharge := null;
+  end if;
+
+  -- 닉네임이 없거나 너무 짧거나, '운영자' 처럼 운영자만 쓸 수 있는 이름이면 임시 이름을 준다.
+  if v_nickname is null or char_length(v_nickname) < 2 or public.is_reserved_nickname(v_nickname) then
     v_nickname := '장병' || substr(new.id::text, 1, 4);
   end if;
 
@@ -151,8 +226,8 @@ begin
     v_nickname := left(v_nickname, 15) || '_' || substr(md5(random()::text), 1, 4);
   end if;
 
-  insert into public.profiles (id, nickname)
-  values (new.id, v_nickname);
+  insert into public.profiles (id, nickname, enlist_date, discharge_date)
+  values (new.id, v_nickname, v_enlist, v_discharge);
 
   return new;
 end;

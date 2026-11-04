@@ -2,22 +2,18 @@ import Link from "next/link";
 import AuthStatus from "@/components/AuthStatus";
 import EquipmentBar from "@/components/EquipmentBar";
 import EquipmentSync from "@/components/EquipmentSync";
+import ServiceDates from "@/components/ServiceDates";
 
 const MENU = [
   {
     href: "/workout/available",
-    title: "가능한 운동 보기",
+    title: "내 체단실에서 가능한 운동",
     desc: "내 기구로 할 수 있는 운동을 부위별로 봅니다.",
   },
   {
     href: "/routines",
-    title: "내 루틴 보기",
-    desc: "만들어 둔 루틴과 운동 순서를 확인합니다.",
-  },
-  {
-    href: "/routines/new",
-    title: "루틴 만들기",
-    desc: "운동을 골라 담아 나만의 루틴을 만듭니다.",
+    title: "나의 루틴",
+    desc: "루틴을 만들고, 운동 순서를 정하고, 확인합니다.",
   },
 ];
 
@@ -35,6 +31,7 @@ export default function WorkoutPage() {
         <h1>운동 시작</h1>
         <AuthStatus />
       </header>
+      <ServiceDates />
       <EquipmentBar />
 
       <nav aria-label="운동 메뉴">

@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import AuthStatus from "@/components/AuthStatus";
+import EquipmentGate from "@/components/EquipmentGate";
 import EquipmentPicker from "@/components/EquipmentPicker";
 import EquipmentSync from "@/components/EquipmentSync";
 import StartWorkoutButton from "@/components/StartWorkoutButton";
@@ -18,8 +20,12 @@ export default function EquipmentPage() {
         <AuthStatus />
       </header>
 
-      <EquipmentPicker />
-      <StartWorkoutButton />
+      <Suspense fallback={null}>
+        <EquipmentGate>
+          <EquipmentPicker />
+          <StartWorkoutButton />
+        </EquipmentGate>
+      </Suspense>
     </main>
   );
 }

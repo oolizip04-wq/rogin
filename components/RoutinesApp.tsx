@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { EXERCISES, getExercise } from "@/lib/data";
 import { BODY_PARTS, BODY_PART_LABELS } from "@/lib/equipment";
@@ -18,15 +17,15 @@ function primaryPart(ex: Exercise): BodyPart {
 }
 
 /**
- * 루틴 만들기.
- *  - 루틴 목록: 이름을 정해 여러 개 만들고, 편집·삭제한다.
+ * 나의 루틴.
+ *  - 루틴 목록: 이름을 정해 여러 개 만들고, 펼쳐서 운동 순서를 보고, 편집·삭제한다.
  *  - 루틴 편집: 할 수 있는 운동을 부위별로 보고 담은 뒤, 담은 운동의 순서를 바꾼다.
  */
-export default function RoutinesApp({ initialEditId = null }: { initialEditId?: string | null }) {
-  const router = useRouter();
+export default function RoutinesApp() {
   const { routines, create, rename, remove, add, removeExercise, move } = useRoutines();
   const { ids: ownedIds } = useOwnedEquipment();
-  const [editingId, setEditingId] = useState<string | null>(initialEditId);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [onlyMine, setOnlyMine] = useState(true);
 
@@ -47,13 +46,16 @@ export default function RoutinesApp({ initialEditId = null }: { initialEditId?: 
   }
 
   /**
-   * 루틴은 담을 때마다 바로 저장되어 있다. [저장하고 돌아가기]는 그 상태로 마치고 전 화면으로 돌아간다.
-   * 전 화면이 없으면(주소로 바로 들어온 경우) 내 루틴 보기로 간다.
+   * 루틴은 담을 때마다 바로 저장되어 있다. [저장하고 돌아가기]는 그 상태로 마치고
+   * 나의 루틴 목록(전 화면)으로 돌아간다. 방금 고친 루틴은 펼쳐 둔다.
    */
   function handleSave() {
-    if (editing && !editing.name.trim()) rename(editing.id, "루틴");
-    if (window.history.length > 1) router.back();
-    else router.push("/routines");
+    if (editing) {
+      if (!editing.name.trim()) rename(editing.id, "루틴");
+      setOpenId(editing.id);
+    }
+    setEditingId(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function handleDelete(r: Routine) {
@@ -74,7 +76,7 @@ export default function RoutinesApp({ initialEditId = null }: { initialEditId?: 
       <div>
         <p>
           <button type="button" onClick={() => setEditingId(null)}>
-            ← 루틴 목록
+            ← 나의 루틴
           </button>
         </p>
 
@@ -252,26 +254,54 @@ export default function RoutinesApp({ initialEditId = null }: { initialEditId?: 
       </section>
 
       <section>
-        <h2>내 루틴 ({routines.length})</h2>
+        <h2>나의 루틴 ({routines.length})</h2>
         {routines.length === 0 ? (
           <p>
             <small>아직 만든 루틴이 없습니다. 위에서 이름을 정해 만들어 보세요.</small>
           </p>
         ) : (
-          <ul style={{ listStyle: "none", padding: 0 }}>
-            {routines.map((r) => (
-              <li key={r.id} style={{ marginBottom: 12 }}>
-                <strong>{r.name}</strong> <small>· 운동 {r.exerciseIds.length}개</small>
-                <br />
-                <button type="button" onClick={() => setEditingId(r.id)}>
-                  편집
-                </button>{" "}
-                <button type="button" onClick={() => handleDelete(r)}>
-                  삭제
-                </button>
-              </li>
-            ))}
-          </ul>
+          routines.map((r) => {
+            const exercises = r.exerciseIds
+              .map((id) => getExercise(id))
+              .filter((ex): ex is Exercise => ex !== undefined);
+            return (
+              <details key={r.id} open={openId === r.id} style={{ marginBottom: 12 }}>
+                <summary
+                  onClick={(e) => {
+                    // 한 번에 하나만 열리도록 직접 관리한다. (하나를 열면 열려 있던 다른 루틴은 닫힌다)
+                    e.preventDefault();
+                    setOpenId((cur) => (cur === r.id ? null : r.id));
+                  }}
+                >
+                  <strong>{r.name}</strong> <small>· 운동 {exercises.length}개</small>
+                </summary>
+                {exercises.length === 0 ? (
+                  <p>
+                    <small>담은 운동이 없습니다.</small>
+                  </p>
+                ) : (
+                  <ol style={{ paddingLeft: 28 }}>
+                    {exercises.map((ex) => (
+                      <li key={ex.id} style={{ marginBottom: 4 }}>
+                        <Link href={`/exercises/${ex.id}`}>
+                          <strong>{ex.name}</strong>
+                        </Link>{" "}
+                        <small>{ex.areas.join(" · ")}</small>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                <p>
+                  <button type="button" onClick={() => setEditingId(r.id)}>
+                    편집
+                  </button>{" "}
+                  <button type="button" onClick={() => handleDelete(r)}>
+                    삭제
+                  </button>
+                </p>
+              </details>
+            );
+          })
         )}
       </section>
     </div>
