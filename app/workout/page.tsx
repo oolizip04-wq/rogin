@@ -15,6 +15,11 @@ const MENU = [
     title: "나의 루틴",
     desc: "루틴을 만들고, 운동 순서를 정하고, 확인합니다.",
   },
+  {
+    href: "/community",
+    title: "커뮤니티",
+    desc: "부대별 체단실 갤러리에서 글을 읽고 씁니다.",
+  },
 ];
 
 export default function WorkoutPage() {

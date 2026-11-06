@@ -5,12 +5,13 @@ import { daysUntil, formatDday, serviceProgress } from "@/lib/dday";
 import { saveServiceDates, useMyProfile } from "@/lib/myProfile";
 
 /**
- * 전역까지 남은 날(D-day)과, 입대일·전역일을 정하거나 고치는 칸.
+ * 전역까지 남은 날(D-day).
+ * 입대일·전역일을 아직 정하지 않은 계정에는 정하는 칸을 보여 주고, 정한 뒤에는 D-day 만 보여 준다.
+ * (날짜를 고치는 기능은 나중에 설정 화면에 둘 예정이다)
  * 로그인하지 않았으면 아무것도 보여 주지 않는다.
  */
 export default function ServiceDates() {
   const { profile, loading } = useMyProfile();
-  const [editing, setEditing] = useState(false);
   const [enlist, setEnlist] = useState("");
   const [discharge, setDischarge] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -21,14 +22,6 @@ export default function ServiceDates() {
   const days = daysUntil(profile.dischargeDate);
   const dday = formatDday(days);
   const progress = serviceProgress(profile.enlistDate, profile.dischargeDate);
-  const hasDischarge = Boolean(profile.dischargeDate);
-
-  function startEdit() {
-    setEnlist(profile?.enlistDate ?? "");
-    setDischarge(profile?.dischargeDate ?? "");
-    setError(null);
-    setEditing(true);
-  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -48,17 +41,16 @@ export default function ServiceDates() {
       setError("저장하지 못했습니다. 잠시 후 다시 시도하세요.");
       return;
     }
-    setEditing(false);
+    setError(null);
   }
 
-  if (editing || !hasDischarge) {
+  // 전역일을 아직 정하지 않았으면 정하는 칸을 보여 준다.
+  if (!profile.dischargeDate) {
     return (
       <form onSubmit={handleSave} style={{ margin: "12px 0" }}>
-        {!hasDischarge && !editing && (
-          <p>
-            <small>입대일과 전역일을 정하면 전역까지 남은 날(D-day)을 보여 드려요.</small>
-          </p>
-        )}
+        <p>
+          <small>입대일과 전역일을 정하면 전역까지 남은 날(D-day)을 보여 드려요.</small>
+        </p>
         <label>
           입대일{" "}
           <input
@@ -82,14 +74,6 @@ export default function ServiceDates() {
         <button type="submit" disabled={saving}>
           {saving ? "저장 중..." : "저장"}
         </button>
-        {editing && (
-          <>
-            {" "}
-            <button type="button" onClick={() => setEditing(false)}>
-              취소
-            </button>
-          </>
-        )}
         {error && <p role="alert">{error}</p>}
       </form>
     );
@@ -104,10 +88,7 @@ export default function ServiceDates() {
         </>
       ) : (
         <>전역을 축하합니다! 🎉</>
-      )}{" "}
-      <button type="button" onClick={startEdit}>
-        날짜 수정
-      </button>
+      )}
     </p>
   );
 }
