@@ -8,7 +8,7 @@ import { nextPathAfterLogin } from "@/lib/equipmentSync";
 import { loadMyProfile, useMyProfile } from "@/lib/myProfile";
 
 /** 첫 화면의 바탕색. 나중에 이미지를 넣을 때까지는 한 가지 색만 쓴다. */
-const BACKGROUND = "#101722";
+const BACKGROUND = "#2a2e27";
 
 /**
  * 첫 화면.
@@ -77,9 +77,9 @@ export default function Landing() {
               <span
                 style={{
                   display: "block",
-                  fontSize: "clamp(20px, 5vw, 30px)",
+                  fontSize: "clamp(20px, 5vw, 28px)",
+                  fontWeight: 700,
                   lineHeight: 1.3,
-                  opacity: 0.9,
                 }}
               >
                 체단실 이용 종료
@@ -87,10 +87,12 @@ export default function Landing() {
               <span
                 style={{
                   display: "block",
-                  marginTop: 10,
-                  fontSize: "clamp(56px, 17vw, 110px)",
+                  marginTop: 14,
+                  fontFamily: "var(--font-display)",
+                  fontWeight: 400,
+                  fontSize: "clamp(64px, 22vw, 120px)",
                   lineHeight: 1,
-                  letterSpacing: 1,
+                  letterSpacing: -1,
                 }}
               >
                 {dday ?? "D-day"}
@@ -106,24 +108,25 @@ export default function Landing() {
         disabled={!intro || entering}
         style={{
           position: "absolute",
-          left: "50%",
-          bottom: "12%",
-          transform: "translateX(-50%)",
-          padding: "16px 48px",
+          left: 24,
+          right: 24,
+          bottom: "calc(40px + env(safe-area-inset-bottom))",
+          padding: "18px 0",
           whiteSpace: "nowrap",
-          fontSize: 20,
-          fontWeight: 700,
-          color: BACKGROUND,
-          background: "#f4f7fb",
+          fontSize: 18,
+          fontWeight: 800,
+          color: "#fff4e8",
+          background: "var(--rust)",
           border: "none",
-          borderRadius: 999,
+          borderRadius: 10,
+          boxShadow: "4px 4px 0 rgba(0,0,0,0.35)",
           cursor: "pointer",
           opacity: intro ? 1 : 0,
           transition: "opacity 0.4s ease",
           pointerEvents: intro ? "auto" : "none",
         }}
       >
-        {entering ? "입장 중..." : "입장하기"}
+        {entering ? "입장 중..." : "[ 입장하기 ]"}
       </button>
 
       <div

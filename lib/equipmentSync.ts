@@ -1,3 +1,4 @@
+import { loadMyProfile } from "./myProfile";
 import { createClient, isSupabaseConfigured } from "./supabase/client";
 
 /**
@@ -62,7 +63,10 @@ export async function saveEquipmentProfile(
  * 기구를 이미 등록한 계정(선택을 마쳤거나 고른 기구가 하나라도 있는 계정)은
  * 바로 운동 시작(가능한 운동 보기 · 내 루틴 보기 · 루틴 만들기)으로 간다.
  */
-export async function nextPathAfterLogin(): Promise<"/workout" | "/equipment"> {
+export async function nextPathAfterLogin(): Promise<"/workout" | "/equipment" | "/welcome"> {
+  // 전역일을 아직 정하지 않았으면(소셜 로그인으로 처음 들어온 계정 등) 닉네임·입대일·전역일부터 정하게 한다.
+  const me = await loadMyProfile();
+  if (me && !me.dischargeDate) return "/welcome";
   const profile = await loadEquipmentProfile();
   const registered = profile ? profile.confirmed || profile.ids.length > 0 : false;
   return registered ? "/workout" : "/equipment";

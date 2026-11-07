@@ -1,15 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Archivo_Black, Noto_Sans_KR } from "next/font/google";
+import BottomNav from "@/components/BottomNav";
+import TopBar from "@/components/TopBar";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// 큰 숫자·영문 라벨용 굵은 글꼴과 한글 글꼴
+const display = Archivo_Black({
+  variable: "--font-display",
+  weight: "400",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const korean = Noto_Sans_KR({
+  variable: "--font-kr",
+  weight: ["400", "600", "700", "800", "900"],
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -24,13 +29,17 @@ export const viewport: Viewport = {
   initialScale: 1,
   // 노치(카메라 구멍) 아래까지 화면을 쓰되, 글자는 안전한 영역 안에 놓는다.
   viewportFit: "cover",
-  themeColor: "#101722",
+  themeColor: "#2a2e27",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body>{children}</body>
+    <html lang="ko" className={`${display.variable} ${korean.variable}`}>
+      <body>
+        <TopBar />
+        {children}
+        <BottomNav />
+      </body>
     </html>
   );
 }

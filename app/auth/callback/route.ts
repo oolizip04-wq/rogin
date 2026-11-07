@@ -23,9 +23,13 @@ export async function GET(request: Request) {
       if (auth.user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("equipment_set, equipment_ids")
+          .select("equipment_set, equipment_ids, discharge_date")
           .eq("id", auth.user.id)
           .maybeSingle();
+        // 전역일을 아직 정하지 않았으면(소셜 로그인으로 처음 들어온 계정) 닉네임·입대일·전역일부터 정한다.
+        if (profile && !profile.discharge_date) {
+          return NextResponse.redirect(`${origin}/welcome`);
+        }
         const hasEquipment =
           Array.isArray(profile?.equipment_ids) && profile.equipment_ids.length > 0;
         if (profile?.equipment_set === true || hasEquipment) destination = "/workout";

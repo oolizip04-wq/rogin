@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { nextPathAfterLogin } from "@/lib/equipmentSync";
 import { randomNickname } from "@/lib/nickname";
+import SocialButtons from "@/components/SocialButtons";
 
 type Mode = "login" | "signup";
 type CheckStatus = "checking" | "available" | "taken" | "error";
@@ -89,7 +90,7 @@ export default function LoginForm({ notice }: { notice?: string }) {
     checkNickname(next);
   }
 
-  async function handleOAuth(provider: "google" | "kakao") {
+  async function handleOAuth(provider: "google") {
     setError(null);
     setMessage(null);
     const supabase = createClient();
@@ -200,15 +201,12 @@ export default function LoginForm({ notice }: { notice?: string }) {
     <form onSubmit={handleSubmit}>
       <h2>{mode === "login" ? "로그인" : "회원가입"}</h2>
 
-      <p>
-        <button type="button" onClick={() => handleOAuth("kakao")}>
-          카카오로 계속하기
-        </button>{" "}
-        <button type="button" onClick={() => handleOAuth("google")}>
-          구글로 계속하기
-        </button>
+      <SocialButtons onSelect={handleOAuth} />
+      <p style={{ display: "flex", alignItems: "center", gap: 10, color: "#6b6b6b", fontSize: 13 }}>
+        <span style={{ flex: 1, height: 1, background: "#cfcfcf" }} />
+        또는 이메일로
+        <span style={{ flex: 1, height: 1, background: "#cfcfcf" }} />
       </p>
-      <p>또는 이메일로</p>
 
       <p>
         <label>

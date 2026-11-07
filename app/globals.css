@@ -1,17 +1,23 @@
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* 색: 군복 느낌의 올리브·카키와 녹슨 주황 */
+  --ink: #232820;
+  --paper: #ebe7d8;
+  --paper-2: #e2decb;
+  --cream: #fdf8ec;
+  --khaki: #d6cfae;
+  --olive: #6f7759;
+  --rust: #b8523a;
+  --hero: #2a2e27;
+  --hero-card: #353a32;
+  --shadow: #c9c3a6;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: var(--paper);
+  --foreground: var(--ink);
 }
 
 html {
   height: 100%;
+  color-scheme: light;
 }
 
 html,
@@ -29,8 +35,13 @@ body {
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--background);
+  /* 아주 옅은 모눈 무늬 */
+  background-image:
+    linear-gradient(#0000000a 1px, transparent 1px),
+    linear-gradient(90deg, #0000000a 1px, transparent 1px);
+  background-size: 24px 24px;
+  font-family: var(--font-kr), "Apple SD Gothic Neo", "Malgun Gothic", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -46,8 +57,10 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+/* 화면 높이가 낮은 폰에서는 홈 카드의 아이콘과 보조 글을 숨겨 한 화면에 들어가게 한다. */
+@media (max-height: 700px) {
+  .home-icon,
+  .home-sub {
+    display: none !important;
   }
 }

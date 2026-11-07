@@ -1027,3 +1027,150 @@ grant execute on function public.list_post_comments(uuid) to authenticated;
 grant execute on function public.add_post_comment(uuid, text) to authenticated;
 grant execute on function public.delete_post_comment(uuid) to authenticated;
 grant execute on function public.report_content(text, uuid, text) to authenticated;
+
+-- ═════════════════════════════════════════════════════════════
+--  알림 (앱 안의 알림 종)
+--  내 글에 댓글이 달리거나, 내 운동 댓글에 답글이 달리면 알림이 생긴다.
+--  표는 사이트에서 직접 읽고 쓰지 못하게 막아 두고, 아래 함수로만 다룬다.
+-- ═════════════════════════════════════════════════════════════
+
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  kind text not null check (kind in ('post_comment', 'comment_reply')),
+  message text not null,
+  link text not null,
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+create index if not exists notifications_user_idx on public.notifications (user_id, created_at desc);
+alter table public.notifications enable row level security;
+revoke all on public.notifications from anon, authenticated;
+
+-- 내 글에 댓글이 달리면 글쓴이에게 알린다. (내가 내 글에 단 댓글은 알리지 않는다)
+drop function if exists public.notify_post_comment() cascade;
+create function public.notify_post_comment()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_owner uuid;
+  v_title text;
+  v_name text;
+begin
+  select p.user_id, p.title into v_owner, v_title
+  from public.gallery_posts p where p.id = new.post_id;
+  if v_owner is null or v_owner = new.user_id then
+    return new;
+  end if;
+  select pr.nickname into v_name from public.profiles pr where pr.id = new.user_id;
+  insert into public.notifications (user_id, kind, message, link)
+  values (
+    v_owner,
+    'post_comment',
+    coalesce(v_name, '누군가') || '님이 "' || left(v_title, 20) || '" 글에 댓글을 남겼어요',
+    '/community/post?id=' || new.post_id
+  );
+  return new;
+end;
+$$;
+
+drop trigger if exists post_comments_notify on public.post_comments;
+create trigger post_comments_notify
+  after insert on public.post_comments
+  for each row execute function public.notify_post_comment();
+
+-- 내 운동 댓글에 답글이 달리면 알린다.
+drop function if exists public.notify_comment_reply() cascade;
+create function public.notify_comment_reply()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_owner uuid;
+  v_name text;
+begin
+  if new.parent_id is null then
+    return new;
+  end if;
+  select c.user_id into v_owner from public.comments c where c.id = new.parent_id;
+  if v_owner is null or v_owner = new.user_id then
+    return new;
+  end if;
+  select pr.nickname into v_name from public.profiles pr where pr.id = new.user_id;
+  insert into public.notifications (user_id, kind, message, link)
+  values (
+    v_owner,
+    'comment_reply',
+    coalesce(v_name, '누군가') || '님이 내 댓글에 답글을 남겼어요',
+    '/exercises/' || new.exercise_id
+  );
+  return new;
+end;
+$$;
+
+drop trigger if exists comments_notify_reply on public.comments;
+create trigger comments_notify_reply
+  after insert on public.comments
+  for each row execute function public.notify_comment_reply();
+
+-- 내 알림 목록 (최근 50개)
+drop function if exists public.list_notifications();
+create function public.list_notifications()
+returns table (id uuid, kind text, message text, link text, created_at timestamptz, is_read boolean)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select n.id, n.kind, n.message, n.link, n.created_at, (n.read_at is not null)
+  from public.notifications n
+  where n.user_id = (select auth.uid())
+  order by n.created_at desc
+  limit 50;
+$$;
+
+-- 안 읽은 알림 수
+drop function if exists public.unread_notification_count();
+create function public.unread_notification_count()
+returns bigint
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select count(*) from public.notifications n
+  where n.user_id = (select auth.uid()) and n.read_at is null;
+$$;
+
+-- 알림을 모두 읽음으로. 한 달이 지난 읽은 알림은 함께 정리한다.
+drop function if exists public.mark_notifications_read();
+create function public.mark_notifications_read()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+begin
+  if v_uid is null then
+    raise exception 'not logged in';
+  end if;
+  update public.notifications set read_at = now() where user_id = v_uid and read_at is null;
+  delete from public.notifications where user_id = v_uid and read_at < now() - interval '30 days';
+end;
+$$;
+
+revoke all on function public.list_notifications() from public, anon;
+revoke all on function public.unread_notification_count() from public, anon;
+revoke all on function public.mark_notifications_read() from public, anon;
+revoke all on function public.notify_post_comment() from public, anon, authenticated;
+revoke all on function public.notify_comment_reply() from public, anon, authenticated;
+grant execute on function public.list_notifications() to authenticated;
+grant execute on function public.unread_notification_count() to authenticated;
+grant execute on function public.mark_notifications_read() to authenticated;

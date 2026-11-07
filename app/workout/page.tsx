@@ -1,66 +1,23 @@
-import Link from "next/link";
-import AuthStatus from "@/components/AuthStatus";
-import EquipmentBar from "@/components/EquipmentBar";
 import EquipmentSync from "@/components/EquipmentSync";
-import ServiceDates from "@/components/ServiceDates";
+import HomeCards from "@/components/HomeCards";
+import HomeHero from "@/components/HomeHero";
 
-const MENU = [
-  {
-    href: "/workout/available",
-    title: "내 체단실에서 가능한 운동",
-    desc: "내 기구로 할 수 있는 운동을 부위별로 봅니다.",
-  },
-  {
-    href: "/routines",
-    title: "나의 루틴",
-    desc: "루틴을 만들고, 운동 순서를 정하고, 확인합니다.",
-  },
-  {
-    href: "/community",
-    title: "커뮤니티",
-    desc: "부대별 체단실 갤러리에서 글을 읽고 씁니다.",
-  },
-];
-
+// 홈 화면: 스크롤 없이 한 화면에 D-day 카드 + 오늘의 개인정비(가능한 운동 · 나의 루틴 · 커뮤니티)가 들어간다.
+// 높이 = 화면 − 위 막대(52px) − 아래 탭 막대(72px) − 기기 안전 영역
 export default function WorkoutPage() {
   return (
-    <main style={{ maxWidth: 640, margin: "0 auto", padding: 16 }}>
+    <main
+      style={{
+        height: "calc(100svh - 52px - 72px - env(safe-area-inset-top) - env(safe-area-inset-bottom))",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        background: "var(--hero)",
+      }}
+    >
       <EquipmentSync />
-      <header
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <h1>운동 시작</h1>
-        <AuthStatus />
-      </header>
-      <ServiceDates />
-      <EquipmentBar />
-
-      <nav aria-label="운동 메뉴">
-        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-          {MENU.map((item) => (
-            <li key={item.href} style={{ marginBottom: 12 }}>
-              <Link
-                href={item.href}
-                style={{
-                  display: "block",
-                  padding: "16px 18px",
-                  border: "1px solid currentColor",
-                  borderRadius: 12,
-                  textDecoration: "none",
-                }}
-              >
-                <strong style={{ fontSize: 20 }}>{item.title}</strong>
-                <br />
-                <small>{item.desc}</small>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <HomeHero />
+      <HomeCards />
     </main>
   );
 }
