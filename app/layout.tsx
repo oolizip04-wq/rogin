@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo_Black, Noto_Sans_KR } from "next/font/google";
+import { Archivo_Black } from "next/font/google";
+import localFont from "next/font/local";
 import BottomNav from "@/components/BottomNav";
 import TopBar from "@/components/TopBar";
 import "./globals.css";
@@ -11,10 +12,12 @@ const display = Archivo_Black({
   subsets: ["latin"],
 });
 
-const korean = Noto_Sans_KR({
+// Pretendard(가변 글꼴 한 파일). 앱 안에 파일을 넣어 두어 인터넷이 없어도 같은 글씨로 나온다.
+const korean = localFont({
+  src: "./fonts/PretendardVariable.woff2",
   variable: "--font-kr",
-  weight: ["400", "600", "700", "800", "900"],
-  preload: false,
+  weight: "45 920",
+  display: "swap",
 });
 
 export const metadata: Metadata = {

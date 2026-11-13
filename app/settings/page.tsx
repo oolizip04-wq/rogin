@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "설정 · 체단실" };
 
 export default function SettingsPage() {
   return (
-    <main style={{ maxWidth: 640, margin: "0 auto", padding: 16 }}>
+    <main className="app-page">
       <MyInfo />
     </main>
   );

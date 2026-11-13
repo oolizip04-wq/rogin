@@ -121,12 +121,12 @@ export default function GalleryBoard() {
 
   return (
     <div>
-      <p>
+      <p style={{ marginBottom: 4 }}>
         <Link href="/community">← 갤러리 목록</Link>
       </p>
-      <h1>{board.galleryTitle}</h1>
+      <h1 style={{ marginBottom: 12 }}>{board.galleryTitle}</h1>
 
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+      <div className="chip-row">
         <button type="button" onClick={() => setWriting((v) => !v)} aria-expanded={writing}>
           {writing ? "닫기" : "글쓰기"}
         </button>
@@ -154,14 +154,14 @@ export default function GalleryBoard() {
       )}
 
       {writing && (
-        <form onSubmit={submit} style={{ border: "1px solid currentColor", borderRadius: 10, padding: 12, marginBottom: 12 }}>
+        <form onSubmit={submit} className="card" style={{ marginBottom: 16 }}>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={MAX_POST_TITLE}
             placeholder="제목"
             aria-label="글 제목"
-            style={{ width: "100%", boxSizing: "border-box", marginBottom: 6 }}
+            style={{ width: "100%", marginBottom: 8 }}
           />
           <textarea
             value={body}
@@ -170,29 +170,26 @@ export default function GalleryBoard() {
             rows={6}
             placeholder="내용"
             aria-label="글 내용"
-            style={{ width: "100%", boxSizing: "border-box" }}
+            style={{ width: "100%" }}
           />
           <small>
             부대 위치·편성·작전·인원 등 군사 보안에 해당하는 내용은 쓰지 마세요. ({body.length}/{MAX_POST_BODY})
           </small>
-          <br />
-          <button type="submit" disabled={busy || !title.trim() || !body.trim()}>
+          <button type="submit" disabled={busy || !title.trim() || !body.trim()} style={{ display: "block", marginTop: 10 }}>
             올리기
           </button>
         </form>
       )}
 
-      {notice && <p role="status">{notice}</p>}
+      {notice && (
+        <p role="status" className="notice">
+          {notice}
+        </p>
+      )}
 
-      <div role="group" aria-label="정렬" style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+      <div role="group" aria-label="정렬" className="chip-row">
         {POST_SORTS.map((s) => (
-          <button
-            key={s.value}
-            type="button"
-            aria-pressed={sort === s.value}
-            onClick={() => changeSort(s.value)}
-            style={{ fontWeight: sort === s.value ? 700 : 400 }}
-          >
+          <button key={s.value} type="button" aria-pressed={sort === s.value} onClick={() => changeSort(s.value)}>
             {s.label}
           </button>
         ))}
@@ -203,11 +200,11 @@ export default function GalleryBoard() {
           <small>아직 글이 없습니다. 첫 글을 남겨 보세요.</small>
         </p>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        <ul className="plain-list">
           {board.posts.map((p) => {
             const hiddenForOthers = p.hidden && !p.is_mine;
             return (
-              <li key={p.id} style={{ borderBottom: "1px solid #8884", padding: "10px 0" }}>
+              <li key={p.id} className="list-row">
                 {hiddenForOthers ? (
                   <small>신고가 쌓여 가려진 글입니다.</small>
                 ) : (

@@ -73,23 +73,23 @@ export default function CommunityHome() {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="갤러리 검색 (예: 3사단)"
           aria-label="갤러리 검색"
-          style={{ flex: 1, minWidth: 160 }}
+          style={{ flex: 1, minWidth: 0 }}
         />
-        <button type="button" onClick={() => setCreating((v) => !v)} aria-expanded={creating}>
+        <button type="button" onClick={() => setCreating((v) => !v)} aria-expanded={creating} style={{ whiteSpace: "nowrap" }}>
           {creating ? "닫기" : "갤러리 만들기"}
         </button>
       </div>
 
       {creating && (
-        <form onSubmit={submit} style={{ border: "1px solid currentColor", borderRadius: 10, padding: 12, marginBottom: 12 }}>
-          <label>
+        <form onSubmit={submit} className="card" style={{ marginBottom: 16 }}>
+          <label style={{ fontWeight: 800 }}>
             새 갤러리 이름
             <br />
             <input
@@ -97,7 +97,7 @@ export default function CommunityHome() {
               onChange={(e) => setTitle(e.target.value)}
               maxLength={MAX_GALLERY_TITLE}
               placeholder="예: 3사단 체단실"
-              style={{ width: "100%", boxSizing: "border-box" }}
+              style={{ width: "100%", margin: "6px 0" }}
             />
           </label>
           <small>
@@ -118,22 +118,20 @@ export default function CommunityHome() {
             </div>
           )}
 
-          {notice && <p role="alert">{notice}</p>}
-          <button type="submit" disabled={busy || title.trim().length < 2}>
+          {notice && (
+            <p role="alert" className="notice" style={{ marginTop: 8 }}>
+              {notice}
+            </p>
+          )}
+          <button type="submit" disabled={busy || title.trim().length < 2} style={{ display: "block", marginTop: 10 }}>
             만들기
           </button>
         </form>
       )}
 
-      <div role="group" aria-label="정렬" style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+      <div role="group" aria-label="정렬" className="chip-row">
         {GALLERY_SORTS.map((s) => (
-          <button
-            key={s.value}
-            type="button"
-            aria-pressed={sort === s.value}
-            onClick={() => setSort(s.value)}
-            style={{ fontWeight: sort === s.value ? 700 : 400 }}
-          >
+          <button key={s.value} type="button" aria-pressed={sort === s.value} onClick={() => setSort(s.value)}>
             {s.label}
           </button>
         ))}
@@ -160,14 +158,11 @@ export default function CommunityHome() {
           {query ? "검색 결과가 없습니다." : "아직 갤러리가 없습니다."} 위의 <strong>갤러리 만들기</strong>로 첫 갤러리를 만들어 보세요.
         </p>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        <ul className="plain-list">
           {list.rows.map((g) => (
-            <li key={g.id} style={{ marginBottom: 10 }}>
-              <Link
-                href={`/community/board?id=${g.id}`}
-                style={{ display: "block", padding: "12px 14px", border: "1px solid currentColor", borderRadius: 10, textDecoration: "none" }}
-              >
-                <strong>{g.title}</strong>
+            <li key={g.id} style={{ marginBottom: 12 }}>
+              <Link href={`/community/board?id=${g.id}`} className="card-link">
+                <strong style={{ fontSize: 17 }}>{g.title}</strong>
                 <br />
                 <small>
                   글 {g.post_count}개 · 최근 7일 {g.recent_count}개

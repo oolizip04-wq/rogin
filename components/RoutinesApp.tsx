@@ -3,13 +3,24 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { EXERCISES, getExercise } from "@/lib/data";
-import { BODY_PARTS, BODY_PART_LABELS } from "@/lib/equipment";
+import MuscleMap from "@/components/MuscleMap";
 import { filterExercises } from "@/lib/filter";
-import { AREA_INFO } from "@/lib/labels";
+import { AREAS_BY_PART, AREA_INFO } from "@/lib/labels";
 import { MAX_EXERCISES, MAX_NAME, MAX_ROUTINES, type Routine } from "@/lib/routineStore";
+import { useExercisePhotos } from "@/lib/useExercisePhotos";
 import { useOwnedEquipment } from "@/lib/useOwnedEquipment";
 import { useRoutines } from "@/lib/useRoutines";
 import type { BodyPart, Exercise } from "@/lib/types";
+
+/** 운동 고르기의 부위 탭 (가능한 운동 화면과 같은 순서) */
+const PICK_TABS: { part: BodyPart; label: string }[] = [
+  { part: "chest", label: "가슴" },
+  { part: "back", label: "등" },
+  { part: "shoulders", label: "어깨" },
+  { part: "legs", label: "하체" },
+  { part: "arms", label: "팔" },
+  { part: "abs", label: "복근" },
+];
 
 /** 운동이 속한 큰 부위 (가장 먼저 적힌 세부 부위 기준) */
 function primaryPart(ex: Exercise): BodyPart {
@@ -26,8 +37,9 @@ export default function RoutinesApp() {
   const { ids: ownedIds } = useOwnedEquipment();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [newName, setNewName] = useState("");
   const [onlyMine, setOnlyMine] = useState(true);
+  const [pickTab, setPickTab] = useState<BodyPart>("chest");
+  const photos = useExercisePhotos();
 
   const editing = routines.find((r) => r.id === editingId) ?? null;
 
@@ -36,13 +48,10 @@ export default function RoutinesApp() {
     [onlyMine, ownedIds],
   );
 
-  function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    const id = create(newName);
-    if (id) {
-      setNewName("");
-      setEditingId(id);
-    }
+  function handleCreate() {
+    // 이름을 비워 두면 '루틴 1', '루틴 2'처럼 자동으로 붙는다. 이름은 편집 화면에서 바꾼다.
+    const id = create("");
+    if (id) setEditingId(id);
   }
 
   /**
@@ -96,10 +105,10 @@ export default function RoutinesApp() {
         </label>
 
         <section>
-          <h2>담은 운동 ({picked.length})</h2>
+          <h2>추가한 운동 ({picked.length})</h2>
           {picked.length === 0 ? (
             <p>
-              <small>아래에서 운동을 골라 담아 보세요.</small>
+              <small>아래에서 운동을 골라 추가해 보세요.</small>
             </p>
           ) : (
             <ol style={{ paddingLeft: 24 }}>
@@ -133,6 +142,15 @@ export default function RoutinesApp() {
               ))}
             </ol>
           )}
+          {/* 추가한 운동을 다 정했으면 여기서 바로 저장하고 목록으로 돌아간다. */}
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={handleSave}
+            style={{ width: "100%", minHeight: 48, fontSize: 16, marginTop: 8 }}
+          >
+            저장하기
+          </button>
         </section>
 
         <section>
@@ -154,48 +172,138 @@ export default function RoutinesApp() {
             </p>
           )}
           {full && (
-            <p role="status">한 루틴에는 운동을 {MAX_EXERCISES}개까지 담을 수 있습니다.</p>
+            <p role="status">한 루틴에는 운동을 {MAX_EXERCISES}개까지 추가할 수 있습니다.</p>
           )}
 
-          {BODY_PARTS.map((part) => {
-            const list = choices.filter((ex) => primaryPart(ex) === part);
-            if (list.length === 0) return null;
-            const taken = list.filter((ex) => editing.exerciseIds.includes(ex.id)).length;
-            return (
-              <details key={part}>
-                <summary>
-                  <strong>{BODY_PART_LABELS[part]}</strong>{" "}
-                  <small>
-                    ({list.length}개{taken > 0 ? ` · 담음 ${taken}` : ""})
+          {/* 부위 탭: 추가한 개수가 있으면 탭에 함께 보여 준다 */}
+          <div
+            role="tablist"
+            aria-label="운동 부위"
+            style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, margin: "12px 0 14px" }}
+          >
+            {PICK_TABS.map(({ part, label }) => {
+              const on = pickTab === part;
+              const inPart = choices.filter((ex) => primaryPart(ex) === part);
+              const taken = inPart.filter((ex) => editing.exerciseIds.includes(ex.id)).length;
+              return (
+                <button
+                  key={part}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => setPickTab(part)}
+                  style={{
+                    minHeight: 44,
+                    color: on ? "var(--cream)" : "var(--ink)",
+                    background: on ? "var(--rust)" : "var(--cream)",
+                    borderColor: on ? "#8e3d29" : "#b5b09a",
+                    boxShadow: on ? "none" : "3px 3px 0 var(--shadow)",
+                  }}
+                >
+                  {label}
+                  <small style={{ marginLeft: 5, color: "inherit", opacity: 0.85 }}>
+                    {taken > 0 ? `${taken}/${inPart.length}` : inPart.length}
                   </small>
-                </summary>
-                <ul style={{ listStyle: "none", paddingLeft: 8 }}>
-                  {list.map((ex) => {
-                    const inRoutine = editing.exerciseIds.includes(ex.id);
-                    return (
-                      <li key={ex.id} style={{ marginBottom: 6 }}>
-                        <Link href={`/exercises/${ex.id}`}>{ex.name}</Link>{" "}
-                        <small>{ex.areas.join(" · ")}</small>{" "}
-                        {inRoutine ? (
-                          <button type="button" onClick={() => removeExercise(editing.id, ex.id)}>
-                            ✓ 담음 (누르면 빼기)
-                          </button>
+                </button>
+              );
+            })}
+          </div>
+
+          {(() => {
+            const list = choices.filter((ex) => primaryPart(ex) === pickTab);
+            if (list.length === 0) {
+              return (
+                <p>
+                  <small>
+                    이 부위에는 지금 고를 수 있는 운동이 없습니다.
+                  </small>
+                </p>
+              );
+            }
+            // 세부 부위(윗가슴·중앙가슴…)별로 묶어 보여 준다. 여러 부위에 걸친 운동은 한 곳에만 나오게
+            // 첫 번째 부위에 넣는다.
+            const groups = AREAS_BY_PART[pickTab]
+              .map((area) => ({ area, items: list.filter((ex) => ex.areas[0] === area) }))
+              .filter((g) => g.items.length > 0);
+            return (
+              <div>
+                {groups.map(({ area, items }) => (
+                  <section key={area}>
+                    <h3
+                      style={{
+                        margin: "18px 0 10px",
+                        paddingBottom: 4,
+                        fontSize: 13,
+                        fontWeight: 800,
+                        borderBottom: "2px solid var(--ink)",
+                      }}
+                    >
+                      {area}
+                    </h3>
+              <ul
+                className="plain-list"
+                style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}
+              >
+                {items.map((ex) => {
+                  const inRoutine = editing.exerciseIds.includes(ex.id);
+                  return (
+                    <li
+                      key={ex.id}
+                      className="card"
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                        padding: 8,
+                        boxShadow: "none",
+                        borderColor: inRoutine ? "var(--rust)" : "#b5b09a",
+                      }}
+                    >
+                      <Link
+                        href={`/exercises/${ex.id}`}
+                        aria-label={`${ex.name} 운동법 보기`}
+                        style={{ display: "block", width: "100%", aspectRatio: "4 / 3", borderRadius: 8, overflow: "hidden", background: "#eef1f5" }}
+                      >
+                        {photos[ex.id] ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={photos[ex.id]}
+                            alt={`${ex.name} 운동법`}
+                            loading="lazy"
+                            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                          />
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => add(editing.id, ex.id)}
-                            disabled={full}
-                          >
-                            + 담기
-                          </button>
+                          <MuscleMap muscles={ex.muscles} compact />
                         )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </details>
+                      </Link>
+                      <div style={{ flex: 1, minWidth: 0, padding: "0 2px" }}>
+                        <Link href={`/exercises/${ex.id}`} style={{ color: "var(--ink)" }}>
+                          <strong style={{ wordBreak: "keep-all" }}>{ex.name}</strong>
+                        </Link>
+                      </div>
+                      {inRoutine ? (
+                        <button
+                          type="button"
+                          aria-pressed="true"
+                          onClick={() => removeExercise(editing.id, ex.id)}
+                          style={{ width: "100%" }}
+                        >
+                          ✓ 추가됨
+                        </button>
+                      ) : (
+                        <button type="button" onClick={() => add(editing.id, ex.id)} disabled={full} style={{ width: "100%" }}>
+                          + 추가하기
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+                  </section>
+                ))}
+              </div>
             );
-          })}
+          })()}
         </section>
 
         {/* 스크롤을 내려도 화면 아래에 붙어 있어서 언제든 저장하고 돌아갈 수 있다. */}
@@ -204,14 +312,15 @@ export default function RoutinesApp() {
             position: "sticky",
             bottom: 0,
             padding: "10px 0",
-            background: "Canvas",
-            color: "CanvasText",
+            background: "var(--paper)",
+            color: "var(--ink)",
           }}
         >
           <button
             type="button"
+            className="btn-primary"
             onClick={handleSave}
-            style={{ padding: "12px 24px", fontWeight: 700, width: "100%" }}
+            style={{ width: "100%", minHeight: 48, fontSize: 16 }}
           >
             저장하고 돌아가기
           </button>
@@ -223,41 +332,29 @@ export default function RoutinesApp() {
   // ───────── 루틴 목록 화면 ─────────
   return (
     <div>
-      <section>
-        <h2>새 루틴</h2>
-        <form onSubmit={handleCreate}>
-          <label>
-            새 루틴 이름
-            <br />
-            <input
-              type="text"
-              value={newName}
-              maxLength={MAX_NAME}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="예: 가슴 데이, 월요일 루틴"
-              style={{ width: "100%", fontSize: 18 }}
-            />
-          </label>
-          <p>
-            <button
-              type="submit"
-              disabled={routines.length >= MAX_ROUTINES}
-              style={{ padding: "10px 20px", fontWeight: 700 }}
-            >
-              + 루틴 만들기
-            </button>
-            {routines.length >= MAX_ROUTINES && (
-              <small> 루틴은 {MAX_ROUTINES}개까지 만들 수 있습니다.</small>
-            )}
+      <section style={{ marginTop: 14 }}>
+        {/* 이름은 만든 뒤 편집 화면에서 정한다. */}
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={handleCreate}
+          disabled={routines.length >= MAX_ROUTINES}
+          style={{ width: "100%", minHeight: 48, fontSize: 16 }}
+        >
+          + 루틴 만들기
+        </button>
+        {routines.length >= MAX_ROUTINES && (
+          <p style={{ marginTop: 8 }}>
+            <small>루틴은 {MAX_ROUTINES}개까지 만들 수 있습니다.</small>
           </p>
-        </form>
+        )}
       </section>
 
       <section>
         <h2>나의 루틴 ({routines.length})</h2>
         {routines.length === 0 ? (
           <p>
-            <small>아직 만든 루틴이 없습니다. 위에서 이름을 정해 만들어 보세요.</small>
+            <small>아직 만든 루틴이 없습니다. 위의 [+ 루틴 만들기]를 눌러 보세요.</small>
           </p>
         ) : (
           routines.map((r) => {
@@ -277,7 +374,7 @@ export default function RoutinesApp() {
                 </summary>
                 {exercises.length === 0 ? (
                   <p>
-                    <small>담은 운동이 없습니다.</small>
+                    <small>추가한 운동이 없습니다.</small>
                   </p>
                 ) : (
                   <ol style={{ paddingLeft: 28 }}>

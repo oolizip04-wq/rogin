@@ -140,7 +140,7 @@ export default function PostView() {
 
   return (
     <div>
-      <p>
+      <p style={{ marginBottom: 8 }}>
         <Link href={`/community/board?id=${post.gallery_id}`}>← {post.gallery_title}</Link>
       </p>
 
@@ -158,14 +158,15 @@ export default function PostView() {
               {post.hidden && " · 신고가 쌓여 다른 사람에게는 가려진 글"}
             </small>
           </p>
-          <p style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{post.body}</p>
+          <p className="card" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", marginBottom: 14 }}>
+            {post.body}
+          </p>
 
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div className="chip-row" style={{ marginBottom: 6 }}>
             <button
               type="button"
               disabled={busy || post.is_mine}
               aria-pressed={post.my_vote === 1}
-              style={{ fontWeight: post.my_vote === 1 ? 700 : 400 }}
               onClick={() => run(() => votePost(id, post.my_vote === 1 ? 0 : 1))}
             >
               👍 추천 {post.like_count}
@@ -174,7 +175,6 @@ export default function PostView() {
               type="button"
               disabled={busy || post.is_mine}
               aria-pressed={post.my_vote === -1}
-              style={{ fontWeight: post.my_vote === -1 ? 700 : 400 }}
               onClick={() => run(() => votePost(id, post.my_vote === -1 ? 0 : -1))}
             >
               👎 비추천 {post.dislike_count}
@@ -196,7 +196,11 @@ export default function PostView() {
         </>
       )}
 
-      {notice && <p role="status">{notice}</p>}
+      {notice && (
+        <p role="status" className="notice">
+          {notice}
+        </p>
+      )}
 
       <h2>댓글 {data.comments.length}개</h2>
       <form onSubmit={submitComment}>
@@ -207,22 +211,21 @@ export default function PostView() {
           rows={3}
           placeholder="댓글을 남겨 보세요."
           aria-label="댓글"
-          style={{ width: "100%", boxSizing: "border-box" }}
+          style={{ width: "100%" }}
         />
         <small>
           군사 보안에 해당하는 내용은 쓰지 마세요. ({text.length}/{MAX_COMMENT})
         </small>
-        <br />
-        <button type="submit" disabled={busy || !text.trim()}>
+        <button type="submit" disabled={busy || !text.trim()} style={{ display: "block", marginTop: 10 }}>
           댓글 쓰기
         </button>
       </form>
 
-      <ul style={{ listStyle: "none", padding: 0, margin: "8px 0" }}>
+      <ul className="plain-list" style={{ margin: "8px 0" }}>
         {data.comments.map((c) => {
           const hiddenC = c.hidden && !c.is_mine;
           return (
-            <li key={c.id} style={{ borderBottom: "1px solid #8884", padding: "10px 0" }}>
+            <li key={c.id} className="list-row">
               <strong>{c.nickname ?? "익명"}</strong> <small>{formatTime(c.created_at)}</small>
               {c.is_mine && <small> · 내 댓글</small>}
               {hiddenC ? (

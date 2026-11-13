@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "글 · 체단실" };
 
 export default function PostPage() {
   return (
-    <main style={{ maxWidth: 640, margin: "0 auto", padding: 16 }}>
+    <main className="app-page">
       <Suspense fallback={null}>
         <PostView />
       </Suspense>

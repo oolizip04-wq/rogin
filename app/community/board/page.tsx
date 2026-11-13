@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "갤러리 · 체단실" };
 
 export default function BoardPage() {
   return (
-    <main style={{ maxWidth: 640, margin: "0 auto", padding: 16 }}>
+    <main className="app-page">
       <Suspense fallback={null}>
         <GalleryBoard />
       </Suspense>

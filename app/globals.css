@@ -57,6 +57,163 @@ a {
   text-decoration: none;
 }
 
+/* 본문 영역 폭을 항상 같게 한다. (내용 길이에 따라 폭이 줄어들어 화면 전환 때 박스 크기가 바뀌던 문제) */
+main {
+  width: 100%;
+}
+
+/* ───── 공통 화면 스타일 (루틴·커뮤니티·알림·설정) ─────
+   main 에 class="app-page" 를 붙이면 안의 제목·버튼·입력칸·목록이 같은 모양이 된다.
+   홈·운동 목록처럼 직접 꾸민 화면에는 붙이지 않는다. */
+.app-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 20px 16px 28px;
+  line-height: 1.5;
+}
+.page-eyebrow {
+  font-family: var(--font-display), sans-serif;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--olive);
+}
+.page-title {
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.2;
+  margin: 2px 0 6px;
+}
+.page-sub {
+  font-size: 14px;
+  color: #5d5a45;
+  word-break: keep-all;
+  margin-bottom: 16px;
+}
+.app-page h1 {
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.25;
+  word-break: keep-all;
+}
+.app-page h2 {
+  font-size: 17px;
+  font-weight: 800;
+  margin: 24px 0 10px;
+}
+.app-page small {
+  font-size: 13px;
+  color: #5d5a45;
+}
+.app-page p {
+  margin-bottom: 10px;
+}
+.app-page a:not(.card-link):not(.btn) {
+  color: var(--rust);
+  font-weight: 700;
+}
+
+/* 버튼: 기본은 카키 칩, 제출 버튼은 주황, 눌린(선택된) 칩은 어두운 색 */
+.app-page button,
+.btn {
+  min-height: 40px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--khaki);
+  border: 1px solid #b5b09a;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.app-page button:active:not(:disabled) {
+  transform: translate(1px, 1px);
+}
+.app-page button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.app-page button[type="submit"],
+.btn-primary {
+  color: #fff4e8;
+  background: var(--rust);
+  border-color: var(--rust);
+  box-shadow: 3px 3px 0 var(--shadow);
+}
+.app-page button[aria-pressed="true"] {
+  color: var(--cream);
+  background: var(--hero);
+  border-color: var(--hero);
+}
+
+/* 입력칸 */
+.app-page input,
+.app-page textarea,
+.app-page select {
+  font: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--cream);
+  border: 1px solid #b5b09a;
+  border-radius: 10px;
+  padding: 10px 12px;
+  max-width: 100%;
+}
+.app-page input::placeholder,
+.app-page textarea::placeholder {
+  color: #8a8668;
+}
+.app-page :focus-visible {
+  outline: 2px solid var(--rust);
+  outline-offset: 2px;
+}
+
+/* 카드·목록 */
+.card {
+  background: var(--cream);
+  border: 1px solid #b5b09a;
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--shadow);
+  padding: 14px 16px;
+}
+a.card-link {
+  display: block;
+  color: inherit;
+  background: var(--cream);
+  border: 1px solid #b5b09a;
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--shadow);
+  padding: 14px 16px;
+  text-decoration: none;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+a.card-link:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--shadow);
+}
+.chip-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.plain-list {
+  list-style: none;
+}
+.list-row {
+  padding: 12px 2px;
+  border-bottom: 1px solid #c9c3a6;
+}
+.notice {
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  background: var(--paper-2);
+  border-left: 4px solid var(--rust);
+  border-radius: 6px;
+}
+
 /* 화면 높이가 낮은 폰에서는 홈 카드의 아이콘과 보조 글을 숨겨 한 화면에 들어가게 한다. */
 @media (max-height: 700px) {
   .home-icon,

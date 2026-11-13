@@ -56,16 +56,16 @@ export default function NotificationList() {
   }
 
   return (
-    <ul style={{ listStyle: "none", padding: 0 }}>
+    <ul className="plain-list">
       {result.rows.map((n) => (
-        <li key={n.id} style={{ marginBottom: 10 }}>
+        <li key={n.id} style={{ marginBottom: 12 }}>
           <Link
             href={n.link}
+            className="card-link"
             style={{
-              display: "block",
-              padding: "12px 14px",
               background: n.is_read ? "var(--paper-2)" : "var(--cream)",
-              border: `1px solid ${n.is_read ? "#c9c3a6" : "var(--rust)"}`,
+              borderColor: n.is_read ? "#c9c3a6" : "var(--rust)",
+              boxShadow: n.is_read ? "none" : undefined,
             }}
           >
             <span style={{ fontWeight: n.is_read ? 600 : 800, wordBreak: "keep-all" }}>{n.message}</span>
